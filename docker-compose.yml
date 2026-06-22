@@ -1,0 +1,25 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      POSTGRES_DB: cinema
+      POSTGRES_USER: cinema
+      POSTGRES_PASSWORD: cinema
+      PGPORT: 5438
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinema -p 5438"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  # The pre-existing volume created by the full Node stack (project "cinema").
+  # Marked external so this file reuses its data and never recreates it.
+  postgres_data:
+    external: true
+    name: cinema_postgres_data
