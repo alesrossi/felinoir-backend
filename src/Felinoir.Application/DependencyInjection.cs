@@ -15,6 +15,10 @@ public static class DependencyInjection
         services.AddScoped<IScreeningService, ScreeningService>();
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
 
+        // Felix readiness state is process-wide; the service that uses it is per-request.
+        services.AddSingleton<FelixState>();
+        services.AddScoped<IFelixService, FelixService>();
+
         return services;
     }
 }
