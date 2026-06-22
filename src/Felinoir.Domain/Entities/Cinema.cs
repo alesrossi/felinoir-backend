@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Felinoir.Domain.Entities;
 
 /// <summary>
@@ -19,5 +21,6 @@ public class Cinema
     public string CreatedAt { get; set; } = default!;
     public string UpdatedAt { get; set; } = default!;
 
+    [JsonIgnore]
     public ICollection<Screening> Screenings { get; set; } = new List<Screening>();
 }
