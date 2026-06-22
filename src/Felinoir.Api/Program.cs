@@ -36,6 +36,7 @@ app.MapHealthEndpoints();
 app.MapMovieEndpoints();
 app.MapCinemaEndpoints();
 app.MapScreeningEndpoints();
+app.MapFelixEndpoints();
 
 app.Run();
 
