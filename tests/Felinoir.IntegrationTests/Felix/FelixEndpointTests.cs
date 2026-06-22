@@ -53,6 +53,28 @@ public class FelixEndpointTests : IClassFixture<FelixEndpointTests.Factory>
         Assert.Equal("Felix non è configurato al momento.", (await res.Content.ReadFromJsonAsync<ErrorBody>())!.Error);
     }
 
+    [Fact]
+    public async Task Binds_a_fully_populated_filters_object()
+    {
+        // Mirrors the frontend's ActiveFilters shape (names/labels, optional fields).
+        // Reaches the 503 path, proving the body — including filters — deserialised cleanly.
+        var res = await _client.PostAsJsonAsync("/felix/chat", new
+        {
+            messages = new[] { new { role = "user", content = "Cosa c'è stasera?" } },
+            filters = new
+            {
+                cinemas = new[] { "Cinema Farnese" },
+                dates = new[] { "2026-06-22" },
+                times = new[] { "sera" },
+                genres = new[] { "Horror" },
+                ov = true,
+                q = "vampiri",
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, res.StatusCode);
+    }
+
     private sealed record ErrorBody(string Error);
 
     public sealed class Factory : WebApplicationFactory<Program>
