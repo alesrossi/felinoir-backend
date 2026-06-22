@@ -1,5 +1,6 @@
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Infrastructure.Configuration;
+using Felinoir.Infrastructure.Felix;
 using Felinoir.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,10 @@ public static class DependencyInjection
                    .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        var cinemasPath = configuration["CINEMAS_CONFIG_PATH"];
+        cinemasPath = string.IsNullOrWhiteSpace(cinemasPath) ? CinemasConfigLocator.Locate() : cinemasPath;
+        services.AddSingleton<ICinemaConfigProvider>(_ => new CinemasYamlConfigProvider(cinemasPath));
 
         return services;
     }

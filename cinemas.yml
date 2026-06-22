@@ -1,0 +1,477 @@
+cinemas:
+  - id: cinema-adriano
+    name: Cinema Adriano
+    address: Piazza Cavour, 22, 00193 Roma RM
+    website: https://www.nvrcinema.it/adriano/
+    open-air: false
+    coordinates:
+      lat: 41.905869
+      lng: 12.469580
+
+  - id: cinema-andromeda
+    name: Cinema Andromeda
+    address: Via Mattia Battistini, 195, 00167 Roma RM
+    website: https://roma.andromeda.18tickets.it
+    open-air: false
+    coordinates:
+      lat: 41.913275
+      lng: 12.418303
+
+  - id: cinema-antares
+    name: Cinema Antares
+    address: Viale Adriatico, 15/21, 00141 Roma RM
+    website: https://www.mycityplex.it/antares/
+    open-air: false
+    coordinates:
+      lat: 41.938427
+      lng: 12.535064
+
+  - id: cinema-cineland
+    name: Cinema Cineland
+    address: Viale dei Romagnoli, 515, 00121 Lido di Ostia, Roma RM
+    website: https://www.cineland.it/cineland/
+    open-air: false
+    coordinates:
+      lat: 41.746259
+      lng: 12.286910
+
+  - id: casa-del-cinema
+    name: Casa del Cinema
+    address: Largo Marcello Mastroianni, 1, 00187 Roma RM
+    website: https://www.casadelcinema.it
+    open-air: false
+    coordinates:
+      lat: 41.910880
+      lng: 12.487702
+
+  - id: cinema-aquila
+    name: Nuovo Cinema Aquila
+    address: Via L'Aquila, 66/74, 00176 Roma RM
+    website: https://cinemaaquila.it
+    open-air: false
+    coordinates:
+      lat: 41.89058
+      lng: 12.5253
+
+  - id: cinema-san-timoteo
+    name: Cineateatro San Timoteo
+    address: Via Apelle, 1, 00124 Roma RM
+    website: https://cineteatrosantimoteo.com
+    open-air: false
+    coordinates:
+      lat: 41.754262
+      lng: 12.353797
+
+  - id: cinema-caravaggio
+    name: Cinema Caravaggio
+    address: Via Giovanni Paisiello, 24/i, 00198 Roma RM
+    website: https://caravaggio.cinemacaravaggio.it
+    open-air: false
+    coordinates:
+      lat: 41.919784
+      lng: 12.492586
+
+  - id: cinema-broadway
+    name: Cinema Broadway
+    address: Via dei Narcisi, 26, 00172 Roma RM
+    website: https://www.cinemabroadway.com/
+    open-air: false
+    coordinates:
+      lat: 41.882231
+      lng: 12.565766
+
+  - id: cinema-doria
+    name: Cinema Doria
+    address: Via Andrea Doria, 52/60, 00192 Roma RM
+    website: https://www.mycityplex.it/doria/
+    open-air: false
+    coordinates:
+      lat: 41.909573
+      lng: 12.450729
+
+  - id: cinema-eurcine
+    name: Cinema Eurcine
+    address: Via Liszt, 32, 00144 Roma RM
+    website: https://www.circuitocinema.com/cinema/eurcine/
+    open-air: false
+    coordinates:
+      lat: 41.8338771
+      lng: 12.4684719
+
+  - id: cinema-farnese
+    name: Cinema Farnese
+    address: Campo de' Fiori, 56, 00186 Roma RM
+    website: https://www.cinemafarnese.it/
+    open-air: false
+    coordinates:
+      lat: 41.8955774
+      lng: 12.4721586
+
+  - id: cinema-giulio-cesare
+    name: Cinema Giulio Cesare
+    address: Viale Giulio Cesare, 229, 00192 Roma RM
+    website: https://www.circuitocinema.com/cinema/giulio-cesare/
+    open-air: false
+    coordinates:
+      lat: 41.9108397
+      lng: 12.4638869
+
+  - id: cinema-intrastevere
+    name: Cinema Intrastevere
+    address: Vicolo Moroni, 3, 00153 Roma RM
+    website: https://www.cinemadiroma.it/programmazione-cinema-intrastevere/
+    open-air: false
+    coordinates:
+      lat: 41.8921527
+      lng: 12.468573
+
+  - id: cinema-nuovo-olimpia
+    name: Cinema Nuovo Olimpia
+    address: Via in Lucina, 16, 00186 Roma RM
+    website: https://www.circuitocinema.com/cinema/nuovo-olimpia/
+    open-air: false
+    coordinates:
+      lat: 41.9027157
+      lng: 12.478536
+
+  - id: cinema-quattro-fontane
+    name: Cinema Quattro Fontane
+    address: Via delle Quattro Fontane, 23, 00184 Roma RM
+    website: https://www.circuitocinema.com/cinema/quattro-fontane/
+    open-air: false
+    coordinates:
+      lat: 41.9013
+      lng: 12.4919985
+
+  - id: cinema-savoy
+    name: Cinema Savoy
+    address: Via Bergamo, 25, 00198 Roma RM
+    website: https://www.mycityplex.it/savoy/
+    open-air: false
+    coordinates:
+      lat: 41.9113102
+      lng: 12.4995899
+
+  - id: thescreen-ottavia
+    name: The Screen Cinemas Roma Ottavia
+    address: Via della Lucchina, 90, 00168 Roma RM
+    website: https://www.thescreen.it/roma/
+    open-air: false
+    coordinates:
+      lat: 41.958702
+      lng: 12.399677
+
+  - id: cinema-tibur
+    name: Cinema Tibur
+    address: Via degli Etruschi, 36, 00185 Roma RM
+    website: https://www.cinemadiroma.it/programmazione-cinema-tibur/
+    open-air: false
+    coordinates:
+      lat: 41.8973224
+      lng: 12.515008
+
+  - id: cinema-trianon
+    name: Cinema Trianon
+    address: Via Muzio Scevola, 99, 00181 Roma RM
+    website: https://www.mycityplex.it/trianon/
+    open-air: false
+    coordinates:
+      lat: 41.8750095
+      lng: 12.5260561
+
+  - id: multiplex-cinema-augustus
+    name: Cinema Ambra Multiplex
+    address: Via Filippo Turati, 5, 00049 Velletri RM
+    website: https://www.ambracinema.com
+    open-air: false
+    coordinates:
+      lat: 41.689402
+      lng: 12.788700
+
+  - id: multisala-ariston
+    name: Multisala Ariston
+    address: Via Degli Atleti, 5, 00034 Colleferro RM
+    website: https://aristoncolleferro.18tickets.it
+    open-air: false
+    coordinates:
+      lat: 41.724403
+      lng: 13.012143
+
+  - id: multisala-alhambra
+    name: Multisala Alhambra
+    address: Via Pier delle Vigne, 4, Roma
+    website: https://alhambra.barberini.18tickets.it
+    open-air: false
+    coordinates:
+      lat: 41.9037
+      lng: 12.4296
+
+  - id: multisala-atlantic
+    name: Multisala Atlantic
+    address: Via Tuscolana, 745, 00174 Roma RM
+    website: https://www.nvrcinema.it/atlantic/
+    open-air: false
+    coordinates:
+      lat: 41.8607808
+      lng: 12.555606
+
+  - id: multisala-barberini
+    name: Multisala Barberini
+    address: P.za Barberini, 25, 00187 Roma RM
+    website: https://multisala.barberini.18tickets.it/
+    open-air: false
+    coordinates:
+      lat: 41.9036042
+      lng: 12.489128
+
+  - id: cinema-mignon
+    name: Cinema Mignon
+    address: Via Viterbo, 11, 00161 Roma RM
+    website: https://mignon.multisalagreenwichroma.com
+    open-air: false
+    coordinates:
+      lat: 41.911703
+      lng: 12.498366
+
+  - id: multisala-greenwich
+    name: Multisala Greenwich
+    address: Via Giovanni Battista Bodoni, 59, 00153 Roma RM
+    website: https://green.multisalagreenwichroma.com/
+    open-air: false
+    coordinates:
+      lat: 41.8788587
+      lng: 12.4741095
+
+  - id: multisala-jolly
+    name: Multisala Jolly
+    address: Via Giano della Bella, 4, 00162 Roma RM
+    website: https://multisalajolly.it/
+    open-air: false
+    coordinates:
+      lat: 41.9087038
+      lng: 12.5228122
+
+  - id: cinema-madison
+    name: Cinema Madison
+    address: Via Gabriello Chiabrera, 121, 00145 Roma RM
+    website: https://madisoncinemas.it
+    open-air: false
+    coordinates:
+      lat: 41.853415
+      lng: 12.479304
+
+  - id: multisala-lux
+    name: Multisala Lux
+    address: Via Massaciuccoli, 31, 00199 Roma RM
+    website: https://www.cinemadiroma.it/programmazione-multisala-lux/
+    open-air: false
+    coordinates:
+      lat: 41.9264215
+      lng: 12.5147436
+
+  - id: multisala-odeon
+    name: Multisala Odeon
+    address: Piazza della Repubblica, 45, Roma
+    website: https://www.cinemadiroma.it/programmazione-multisala-odeon/
+    open-air: false
+    coordinates:
+      lat: 41.9495282
+      lng: 12.4656229
+
+  - id: the-space-moderno
+    name: The Space Cinema Moderno
+    address: P.za della Repubblica, 43/45, 00184 Roma RM
+    website: https://www.thespacecinema.it/cinema/roma-moderno/al-cinema#
+    open-air: false
+    coordinates:
+      lat: 41.9026992
+      lng: 12.4964179
+
+  - id: the-space-parco-de-medici
+    name: The Space Cinema Parco de' Medici
+    address: The Space Cinema, Viale Salvatore Rebecchini 3, 00148 Rome RM, Italy
+    website: https://www.thespacecinema.it/cinema/roma-parco-de%27medici/al-cinema
+    open-air: false
+    coordinates:
+      lat: 41.81514328018534
+      lng: 12.411329220982054
+
+  - id: uci-luxe-maximo
+    name: UCI Luxe Maximo
+    address: Via Laurentina, 865, 00143 Roma RM
+    website: https://ucicinemas.it/cinema/uci-luxe-maximo
+    open-air: false
+    coordinates:
+      lat: 41.8075878
+      lng: 12.4859393
+
+  - id: uci-parco-leonardo
+    name: UCI Cinemas Parco Leonardo
+    address: Via Gian Lorenzo Bernini, 00119 Fiumicino RM, Italy
+    website: https://ucicinemas.it/cinema/uci-cinemas-parco-leonardo-roma
+    open-air: false
+    coordinates:
+      lat: 41.7979793
+      lng: 12.2955904
+
+  - id: uci-porta-di-roma
+    name: UCI Cinemas Porta di Roma
+    address: UCI Cinemas, Via Alberto Lionello 201, 00139 Rome RM, Italy
+    website: https://ucicinemas.it/cinema/uci-cinemas-porta-di-roma-roma
+    open-air: false
+    coordinates:
+      lat: 41.971398911638744
+      lng: 12.541209356740922
+
+  - id: uci-roma-est
+    name: UCI Cinemas Roma Est
+    address: Roma Est, Via Collatina 858, 00132 Rome RM, Italy
+    website: https://ucicinemas.it/cinema/uci-cinemas-romaest-roma
+    open-air: false
+    coordinates:
+      lat: 41.9147117
+      lng: 12.6612557
+
+  - id: cinema-troisi
+    name: Cinema Troisi
+    address: Via Girolamo Induno, 1, 00153 Roma RM
+    website: https://cinematroisi.it
+    open-air: false
+    coordinates:
+      lat: 41.884946
+      lng: 12.471638
+
+  - id: cinema-madison-alfellini
+    name: Cinema Madison Alfellini
+    address: Viale I Maggio, 82, 00046 Grottaferrata RM
+    website: https://madisoncinemas.it
+    open-air: false
+    coordinates:
+      lat: 41.78689
+      lng: 12.66888
+
+  - id: cinema-politeama
+    name: Cityplex Politeama
+    address: Largo Augusto Panizza, 5, 00044 Frascati RM
+    website: https://www.politeama.it
+    open-air: false
+    coordinates:
+      lat: 41.807999
+      lng: 12.677493
+
+  - id: the-space-guidonia
+    name: The Space Cinema Guidonia
+    address: Via Antonio De Curtis, 00012 Guidonia Montecelio RM
+    website: https://www.thespacecinema.it
+    open-air: false
+    coordinates:
+      lat: 41.957782
+      lng: 12.708933
+
+  - id: cinema-azzurro-scipioni
+    name: Cinema Azzurro Scipioni
+    address: Via degli Scipioni, 82, 00192 Roma RM
+    website: https://www.azzurroscipioni.it
+    open-air: false
+    coordinates:
+      lat: 41.90849
+      lng: 12.45824
+
+  - id: cinema-mancini
+    name: Cinema Mancini
+    address: Via Giacomo Matteotti, 82, 00015 Monterotondo RM
+    website: https://www.cinemancini.it
+    open-air: false
+    coordinates:
+      lat: 42.052141
+      lng: 12.61807
+
+  - id: cinema-palazzo-san-lorenzo
+    name: Palazzo San Lorenzo
+    address: Piazza dei Sanniti, 26, 00185 Roma RM
+    website: https://www.liveticket.it/palazzosanlorenzo
+    open-air: false
+    coordinates:
+      lat: 41.898715
+      lng: 12.516649
+
+  - id: cinema-astoria
+    name: Cinema Astoria Anzio
+    address: Via Giacomo Matteotti, 8c, 00042 Anzio RM
+    website: https://www.cinemadianzio.it
+    open-air: false
+    coordinates:
+      lat: 41.4482734
+      lng: 12.6282633
+
+  - id: cinema-astoria-nettuno
+    name: Cinema Astoria Al Teatro Spazio Vitale
+    address: Via Capitano Dante Canducci, 29/A, 00048 Nettuno RM
+    website: https://nettuno.anzioastoria.cinemadianzio.it
+    open-air: false
+    coordinates:
+      lat: 41.4662573
+      lng: 12.6819565
+
+  - id: cinema-royal
+    name: Cinema Royal Civitavecchia
+    address: Piazza Regina Margherita, 7, 00053 Civitavecchia RM
+    website: https://www.cineroyalcivitavecchia.it
+    open-air: false
+    coordinates:
+      lat: 42.0932778
+      lng: 11.7940467
+
+  - id: cinema-giuseppetti
+    name: Cinema Teatro Giuseppetti
+    address: Vicolo Della Inversata, 5, 00019 Tivoli RM
+    website: https://www.teatrogiuseppetti.it
+    open-air: false
+    coordinates:
+      lat: 41.961292228266835
+      lng: 12.800107565649402
+
+
+  - id: multisala-cynthianum
+    name: Multisala Cynthianum
+    address: Viale Giuseppe Mazzini, 9, 00045 Genzano di Roma RM
+    website: https://www.cinemagenzano.it
+    coordinates:
+      lat: 41.71126419974851
+      lng: 12.689878683149269
+
+  - id: cinema-nuovo-sacher
+    name: Cinema Nuovo Sacher
+    address: Largo Ascianghi, 1, 00153 Roma RM
+    website: https://www.sacherfilm.eu/
+    open-air: false
+    coordinates:
+      lat: 41.88453
+      lng: 12.472374
+      
+  - id: san-cosimato
+    name: Piazza San Cosimato
+    address: Piazza di San Cosimato, 00153 Roma RM
+    website: https://ilcinemainpiazza.it
+    open-air: true
+    coordinates:
+      lat: 41.887146
+      lng: 12.469766
+      
+  - id: cervelletta
+    name: Parco della Cervelletta
+    address: Via Fausto Gullo, 00155 Roma RM
+    website: https://ilcinemainpiazza.it
+    open-air: true
+    coordinates:
+      lat: 41.912735
+      lng: 12.580386
+
+  - id: monte-ciocci
+    name: Parco di Monte Ciocci
+    address: Via Anastasio II, 00136 Roma RM
+    website: https://ilcinemainpiazza.it
+    open-air: true
+    coordinates:
+      lat: 41.900547
+      lng: 12.442249

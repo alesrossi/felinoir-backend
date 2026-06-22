@@ -1,4 +1,5 @@
 using Felinoir.Application.Cinemas;
+using Felinoir.Application.Felix;
 using Felinoir.Application.Movies;
 using Felinoir.Application.Screenings;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<IMovieService, MovieService>();
         services.AddScoped<ICinemaService, CinemaService>();
         services.AddScoped<IScreeningService, ScreeningService>();
+        services.AddScoped<ICorpusBuilder, CorpusBuilder>();
 
         return services;
     }
