@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Felinoir.Api/Felinoir.Api.csproj" />
+    <Project Path="src/Felinoir.Application/Felinoir.Application.csproj" />
+    <Project Path="src/Felinoir.Domain/Felinoir.Domain.csproj" />
+    <Project Path="src/Felinoir.Infrastructure/Felinoir.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Felinoir.IntegrationTests/Felinoir.IntegrationTests.csproj" />
+    <Project Path="tests/Felinoir.UnitTests/Felinoir.UnitTests.csproj" />
+  </Folder>
+</Solution>
