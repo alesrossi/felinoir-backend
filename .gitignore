@@ -89,3 +89,8 @@ out/
 
 # nuget settings related Network
 .aider*
+
+# Local environment secrets (DATABASE_URL, GEMINI_API_KEY, ...)
+.env
+.env.*
+!.env.example

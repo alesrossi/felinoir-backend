@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Felinoir.Application\Felinoir.Application.csproj" />
     <ProjectReference Include="..\..\src\Felinoir.Domain\Felinoir.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Felinoir.Infrastructure\Felinoir.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
