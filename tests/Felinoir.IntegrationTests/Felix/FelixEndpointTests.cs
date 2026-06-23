@@ -1,21 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using Felinoir.IntegrationTests.Support;
 
 namespace Felinoir.IntegrationTests.Felix;
 
 /// <summary>
 /// Drives <c>POST /felix/chat</c> through the real pipeline with an in-memory TestServer.
-/// No database or Gemini key is required: validation (400) happens before any DB access,
-/// and an unset GEMINI_API_KEY deterministically yields the 503 path.
+/// No database or Gemini key is required: validation (400) happens before any service call,
+/// and Felix is stubbed as unconfigured so the 503 path is deterministic.
 /// </summary>
-public class FelixEndpointTests : IClassFixture<FelixEndpointTests.Factory>
+public class FelixEndpointTests : IClassFixture<TestApiFactory>
 {
     private readonly HttpClient _client;
 
-    public FelixEndpointTests(Factory factory) => _client = factory.CreateClient();
+    public FelixEndpointTests(TestApiFactory factory) => _client = factory.CreateClient();
 
     [Fact]
     public async Task Returns_400_when_messages_missing()
@@ -76,18 +74,4 @@ public class FelixEndpointTests : IClassFixture<FelixEndpointTests.Factory>
     }
 
     private sealed record ErrorBody(string Error);
-
-    public sealed class Factory : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            // Added last, so these win over the .env-derived environment variables.
-            builder.ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                // Parseable but never connected to for these tests.
-                ["DATABASE_URL"] = "Host=localhost;Port=5432;Database=felinoir;Username=u;Password=p",
-                ["GEMINI_API_KEY"] = "",
-            }));
-        }
-    }
 }

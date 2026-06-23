@@ -1,7 +1,5 @@
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using Felinoir.IntegrationTests.Support;
 
 namespace Felinoir.IntegrationTests;
 
@@ -9,11 +7,11 @@ namespace Felinoir.IntegrationTests;
 /// Verifies the OpenAPI document is generated and exposes every endpoint, and that the
 /// Scalar reference UI is served. Runs on an in-memory TestServer — no DB or Gemini key.
 /// </summary>
-public class OpenApiTests : IClassFixture<OpenApiTests.Factory>
+public class OpenApiTests : IClassFixture<TestApiFactory>
 {
     private readonly HttpClient _client;
 
-    public OpenApiTests(Factory factory) => _client = factory.CreateClient();
+    public OpenApiTests(TestApiFactory factory) => _client = factory.CreateClient();
 
     [Fact]
     public async Task Openapi_document_lists_every_endpoint()
@@ -38,17 +36,5 @@ public class OpenApiTests : IClassFixture<OpenApiTests.Factory>
         var res = await _client.GetAsync("/scalar/v1");
 
         Assert.True(res.IsSuccessStatusCode, $"Scalar UI returned {(int)res.StatusCode}");
-    }
-
-    public sealed class Factory : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["DATABASE_URL"] = "Host=localhost;Port=5432;Database=felinoir;Username=u;Password=p",
-                ["GEMINI_API_KEY"] = "",
-            }));
-        }
     }
 }
