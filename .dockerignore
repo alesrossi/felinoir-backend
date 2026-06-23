@@ -1,0 +1,23 @@
+# Build artifacts
+**/bin
+**/obj
+
+# VCS / CI / IDE
+.git
+.gitignore
+.github
+.vs
+.idea
+.vscode
+*.user
+
+# Local-only config and secrets
+.env
+**/appsettings.Development.json
+
+# Tests aren't part of the published image
+tests
+
+# Misc
+**/*.md
+scratchpad
