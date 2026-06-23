@@ -1,0 +1,151 @@
+services:
+
+  # ── Next.js frontend ──────────────────────────────────────────────────────────
+  cinema-frontend:
+    image: alesrossi/cinema-frontend:latest
+    container_name: cinema
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      BACKEND_URL: http://cinema-backend:3001
+      VIRTUAL_HOST: felinoir.it,www.felinoir.it,cinema-roma.alessandrorossi.tech
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: felinoir.it,www.felinoir.it,cinema-roma.alessandrorossi.tech
+      LETSENCRYPT_EMAIL: alessandro0024@gmail.com
+    depends_on:
+      cinema-backend:
+        condition: service_healthy
+    expose:
+      - "3000"
+    networks:
+      - proxy
+      - cinema_internal
+
+  # ── REST API ──────────────────────────────────────────────────────────────────
+  cinema-backend:
+    image: alesrossi/cinema-backend:latest
+    container_name: cinema-backend
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://cinema:cinema@db:5432/cinema
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/3001 && printf \"GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - cinema_internal
+
+  # ── Scraper ───────────────────────────────────────────────────────────────────
+  # Triggered by daily-report.sh via: docker compose run --rm cinema-scraper
+  cinema-scraper:
+    image: alesrossi/cinema-scrapers:latest
+    container_name: cinema-scraper
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://cinema:cinema@db:5432/cinema
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
+      OMDB_API_KEY: ${OMDB_API_KEY}
+      FLARESOLVERR_URL: http://flaresolverr:8191/v1
+    depends_on:
+      db:
+        condition: service_healthy
+      flaresolverr:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /app/logs
+        log=/app/logs/scraper.log
+        echo "=== $$(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee -a $$log
+
+        { npm run scrape 2>&1;      echo $$? > /tmp/s1_exit; } | tee /tmp/s1.txt | tee -a $$log
+        { npm run enrich 2>&1;      echo $$? > /tmp/s2_exit; } | tee /tmp/s2.txt | tee -a $$log
+        { npm run enrich:omdb 2>&1; echo $$? > /tmp/s3_exit; } | tee /tmp/s3.txt | tee -a $$log
+
+        E1=$$(cat /tmp/s1_exit 2>/dev/null || echo '?')
+        E2=$$(cat /tmp/s2_exit 2>/dev/null || echo '?')
+        E3=$$(cat /tmp/s3_exit 2>/dev/null || echo '?')
+
+        {
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════"
+          echo "  PIPELINE SUMMARY — $$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "═══════════════════════════════════════════════════════════════"
+
+          echo ""
+          echo "── 1. SCRAPE (exit $$E1) ───────────────────────────────────────"
+          L=$$(grep -n "Scrape summary" /tmp/s1.txt 2>/dev/null | tail -1 | cut -d: -f1)
+          [ -n "$$L" ] && tail -n +"$$L" /tmp/s1.txt || echo "  (no summary)"
+
+          echo ""
+          echo "── 2. TMDB ENRICHMENT (exit $$E2) ──────────────────────────────"
+          L=$$(grep -n "Summary" /tmp/s2.txt 2>/dev/null | tail -1 | cut -d: -f1)
+          [ -n "$$L" ] && tail -n +"$$L" /tmp/s2.txt || echo "  (no summary)"
+
+          echo ""
+          echo "── 3. OMDB ENRICHMENT (exit $$E3) ──────────────────────────────"
+          L=$$(grep -n "Summary" /tmp/s3.txt 2>/dev/null | tail -1 | cut -d: -f1)
+          [ -n "$$L" ] && tail -n +"$$L" /tmp/s3.txt || echo "  (no summary)"
+
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════"
+        } | tee -a $$log
+    networks:
+      - cinema_internal
+
+  # ── FlareSolverr ──────────────────────────────────────────────────────────────
+  flaresolverr:
+    image: 21hsmw/flaresolverr:nodriver
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8191/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - cinema_internal
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cinema
+      POSTGRES_USER: cinema
+      POSTGRES_PASSWORD: cinema
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinema"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cinema_internal
+
+networks:
+  proxy:
+    external: true
+  cinema_internal:
+    name: cinema_internal
+
+volumes:
+  postgres_data:

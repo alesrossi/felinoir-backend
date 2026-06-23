@@ -1,5 +1,9 @@
-
 services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  # network_mode: host is required on this machine because Calico CNI (Kubernetes)
+  # installs iptables rules that block Docker bridge network traffic.
+  # With host networking all services bind directly to the host.
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -17,9 +21,149 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── REST API ─────────────────────────────────────────────────────────────────
+  backend:
+    image: alesrossi/cinema-backend:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: 4001
+      DATABASE_URL: postgres://cinema:cinema@127.0.0.1:5438/cinema
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/4001 && printf \"GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Next.js web server ───────────────────────────────────────────────────────
+  frontend:
+    image: alesrossi/cinema-frontend:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: 4000
+      BACKEND_URL: http://localhost:4001
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4000', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── FlareSolverr ─────────────────────────────────────────────────────────────
+  # Solves Cloudflare challenges on behalf of the scraper.
+  # Dashboard/health: http://localhost:8191
+  flaresolverr:
+    image: 21hsmw/flaresolverr:nodriver
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      LOG_LEVEL: info
+      PORT: 8191
+
+  # ── Scraper ──────────────────────────────────────────────────────────────────
+  # Runs once on startup then every 24 h.
+  # To trigger a manual run: docker compose run --rm scraper
+  scraper:
+    image: alesrossi/cinema-scrapers:latest
+    command:
+      - sh
+      - -c
+      - |
+        run_pipeline() {
+          mkdir -p /app/logs
+          log=/app/logs/scraper.log
+          echo "=== $$(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee -a $$log
+
+          { npm run scrape 2>&1;      echo $$? > /tmp/s1_exit; } | tee /tmp/s1.txt | tee -a $$log
+          { npm run enrich 2>&1;      echo $$? > /tmp/s2_exit; } | tee /tmp/s2.txt | tee -a $$log
+          { npm run enrich:omdb 2>&1; echo $$? > /tmp/s3_exit; } | tee /tmp/s3.txt | tee -a $$log
+
+          E1=$$(cat /tmp/s1_exit 2>/dev/null || echo '?')
+          E2=$$(cat /tmp/s2_exit 2>/dev/null || echo '?')
+          E3=$$(cat /tmp/s3_exit 2>/dev/null || echo '?')
+
+          {
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "  PIPELINE SUMMARY — $$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "═══════════════════════════════════════════════════════════════"
+
+            echo ""
+            echo "── 1. SCRAPE (exit $$E1) ───────────────────────────────────────"
+            L=$$(grep -n "Scrape summary" /tmp/s1.txt 2>/dev/null | tail -1 | cut -d: -f1)
+            [ -n "$$L" ] && tail -n +"$$L" /tmp/s1.txt || echo "  (no summary)"
+
+            echo ""
+            echo "── 2. TMDB ENRICHMENT (exit $$E2) ──────────────────────────────"
+            L=$$(grep -n "Summary" /tmp/s2.txt 2>/dev/null | tail -1 | cut -d: -f1)
+            [ -n "$$L" ] && tail -n +"$$L" /tmp/s2.txt || echo "  (no summary)"
+
+            echo ""
+            echo "── 3. OMDB ENRICHMENT (exit $$E3) ──────────────────────────────"
+            L=$$(grep -n "Summary" /tmp/s3.txt 2>/dev/null | tail -1 | cut -d: -f1)
+            [ -n "$$L" ] && tail -n +"$$L" /tmp/s3.txt || echo "  (no summary)"
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+          } | tee -a $$log
+        }
+
+        run_pipeline
+        while true; do
+          sleep 86400
+          run_pipeline
+        done
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DATABASE_URL: postgres://cinema:cinema@127.0.0.1:5438/cinema
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
+      OMDB_API_KEY: ${OMDB_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      PROXY_URL: ${PROXY_URL:-}
+      USE_PROXY: ${USE_PROXY:-false}
+      FLARESOLVERR_URL: http://localhost:8191/v1
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - scraper_logs:/app/logs
+
+
+  # ── Adminer (DB UI) ──────────────────────────────────────────────────────────
+  # Access at http://localhost:8080
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      ADMINER_DEFAULT_SERVER: 127.0.0.1:5438
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Nginx reverse proxy ───────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+# ── Volumes ────────────────────────────────────────────────────────────────────
 volumes:
-  # The pre-existing volume created by the full Node stack (project "cinema").
-  # Marked external so this file reuses its data and never recreates it.
   postgres_data:
-    external: true
-    name: cinema_postgres_data
+  scraper_logs:
