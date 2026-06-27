@@ -140,14 +140,16 @@ services:
       - scraper_logs:/app/logs
 
 
-  # ── Adminer (DB UI) ──────────────────────────────────────────────────────────
-  # Access at http://localhost:8080
-  adminer:
-    image: adminer:latest
+  # ── CloudBeaver (DB management UI) ────────────────────────────────────────────
+  # Access at http://localhost:8978 — first launch walks through admin setup.
+  # Add a Postgres connection pointing at host 127.0.0.1, port 5438,
+  # database/user/password all "cinema".
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
     restart: unless-stopped
     network_mode: host
-    environment:
-      ADMINER_DEFAULT_SERVER: 127.0.0.1:5438
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
     depends_on:
       db:
         condition: service_healthy
@@ -167,3 +169,4 @@ services:
 volumes:
   postgres_data:
   scraper_logs:
+  cloudbeaver_data:
