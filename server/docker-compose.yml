@@ -55,6 +55,8 @@ services:
       TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
       OMDB_API_KEY: ${OMDB_API_KEY}
       FLARESOLVERR_URL: http://flaresolverr:8191/v1
+      USE_PROXY: ${USE_PROXY:-false}
+      PROXY_URL: ${PROXY_URL:-}
     depends_on:
       db:
         condition: service_healthy
