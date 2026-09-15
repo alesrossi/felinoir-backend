@@ -42,8 +42,8 @@ public class Movie
     public string? TmdbPopularity { get; set; }
     public string? TmdbStatus { get; set; }
     public string? TmdbTagline { get; set; }
-    public int? TmdbBudget { get; set; }
-    public int? TmdbRevenue { get; set; }
+    public long? TmdbBudget { get; set; }
+    public long? TmdbRevenue { get; set; }
     public string? TmdbHomepage { get; set; }
     public string? TmdbCollection { get; set; }
     public string? TmdbProductionCompanies { get; set; }

@@ -24,7 +24,7 @@ UNENRICHED=$(docker compose -f "$COMPOSE_FILE" exec -T db \
   psql -U cinema -d cinema -tAc \
   "SELECT title || COALESCE(' (' || original_title || ')', '')
    FROM movies
-   WHERE tmdb_enriched_at IS NULL
+   WHERE has_matches = 'FailedMatch'
    ORDER BY title;" 2>/dev/null || echo "(query failed)")
 
 UNENRICHED_OMDB=$(docker compose -f "$COMPOSE_FILE" exec -T db \
@@ -33,7 +33,7 @@ UNENRICHED_OMDB=$(docker compose -f "$COMPOSE_FILE" exec -T db \
 
 UNENRICHED_COUNT=$(docker compose -f "$COMPOSE_FILE" exec -T db \
   psql -U cinema -d cinema -tAc \
-  "SELECT COUNT(*) FROM movies WHERE tmdb_enriched_at IS NULL;" 2>/dev/null || echo "?")
+  "SELECT COUNT(*) FROM movies WHERE has_matches = 'FailedMatch';" 2>/dev/null || echo "?")
 
 TOTAL_MOVIES=$(docker compose -f "$COMPOSE_FILE" exec -T db \
   psql -U cinema -d cinema -tAc \

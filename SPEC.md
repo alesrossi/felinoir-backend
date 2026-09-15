@@ -310,8 +310,8 @@ Index: `idx_cinemas_city` on `city`.
 | `tmdb_popularity` | TEXT | |
 | `tmdb_status` | TEXT | |
 | `tmdb_tagline` | TEXT | |
-| `tmdb_budget` | INTEGER | |
-| `tmdb_revenue` | INTEGER | |
+| `tmdb_budget` | BIGINT | |
+| `tmdb_revenue` | BIGINT | |
 | `tmdb_homepage` | TEXT | |
 | `tmdb_collection` | TEXT | JSON blob |
 | `tmdb_production_companies` | TEXT | JSON blob |
