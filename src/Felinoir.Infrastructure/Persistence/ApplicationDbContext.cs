@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Movie> Movies => Set<Movie>();
     public DbSet<Screening> Screenings => Set<Screening>();
     public DbSet<TmdbLookupCache> TmdbLookupCache => Set<TmdbLookupCache>();
+    public DbSet<AiMatchVerdict> AiMatchVerdicts => Set<AiMatchVerdict>();
     public DbSet<FelixCache> FelixCache => Set<FelixCache>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

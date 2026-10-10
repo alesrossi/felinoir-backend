@@ -21,6 +21,67 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Felinoir.Domain.Entities.AiMatchVerdict", b =>
+                {
+                    b.Property<string>("ScrapedTitle")
+                        .HasColumnType("text")
+                        .HasColumnName("scraped_title");
+
+                    b.Property<string>("ScrapedOriginalTitle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("")
+                        .HasColumnName("scraped_original_title");
+
+                    b.Property<int?>("CheckedTmdbId")
+                        .HasColumnType("integer")
+                        .HasColumnName("checked_tmdb_id");
+
+                    b.Property<string>("Confidence")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("confidence");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("text")
+                        .HasColumnName("model");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.PrimitiveCollection<int[]>("RejectedTmdbIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("rejected_tmdb_ids")
+                        .HasDefaultValueSql("'{}'");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tmdb_id");
+
+                    b.Property<string>("Verdict")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verdict");
+
+                    b.Property<string>("VerifiedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("ScrapedTitle", "ScrapedOriginalTitle")
+                        .HasName("pk_ai_match_verdicts");
+
+                    b.ToTable("ai_match_verdicts", null, t =>
+                        {
+                            t.HasCheckConstraint("ai_match_verdicts_confidence_check", "confidence IN ('high', 'low')");
+
+                            t.HasCheckConstraint("ai_match_verdicts_verdict_check", "verdict IN ('match', 'not_a_film', 'unknown')");
+                        });
+                });
+
             modelBuilder.Entity("Felinoir.Domain.Entities.Cinema", b =>
                 {
                     b.Property<string>("Id")
@@ -443,6 +504,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("looked_up_at");
+
+                    b.Property<string>("ScrapedPosterUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("scraped_poster_url");
 
                     b.Property<int>("TmdbId")
                         .HasColumnType("integer")

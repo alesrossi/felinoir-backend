@@ -312,7 +312,7 @@ Index: `idx_cinemas_city` on `city`.
 | `tmdb_tagline` | TEXT | |
 | `tmdb_budget` | BIGINT | |
 | `tmdb_revenue` | BIGINT | |
-| `tmdb_homepage` | TEXT | |
+ | `tmdb_homepage` | TEXT | |
 | `tmdb_collection` | TEXT | JSON blob |
 | `tmdb_production_companies` | TEXT | JSON blob |
 | `tmdb_production_countries` | TEXT | JSON blob |
@@ -366,6 +366,26 @@ Caches title → TMDB id resolutions to avoid redundant API calls during enrichm
 | `scraped_original_title` | TEXT NOT NULL | default `''` |
 | `tmdb_id` | INTEGER NOT NULL | |
 | `looked_up_at` | TEXT NOT NULL | |
+| `scraped_poster_url` | TEXT | poster of the scraped row the entry was written for |
+
+Unique index on `(scraped_title, scraped_original_title)`.
+
+### `ai_match_verdicts`
+
+What the scraper's AI verification pass (`npm run enrich:ai`) concluded about a scraped title. Keyed like `tmdb_lookup_cache`, not by movie id, so a verdict outlives the row it was reached on. Written by the scraper only; the API never reads it.
+
+| Column | Type | Notes |
+|---|---|---|
+| `scraped_title` | TEXT NOT NULL | |
+| `scraped_original_title` | TEXT NOT NULL | default `''` |
+| `verdict` | TEXT NOT NULL | `match` \| `not_a_film` \| `unknown` (CHECK) |
+| `tmdb_id` | INTEGER | |
+| `confidence` | TEXT NOT NULL | `high` \| `low` (CHECK) |
+| `checked_tmdb_id` | INTEGER | |
+| `rejected_tmdb_ids` | INTEGER[] NOT NULL | default `'{}'` |
+| `reason` | TEXT | |
+| `model` | TEXT | |
+| `verified_at` | TEXT NOT NULL | ISO 8601 UTC |
 
 Unique index on `(scraped_title, scraped_original_title)`.
 

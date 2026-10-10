@@ -54,6 +54,8 @@ services:
       DATABASE_URL: postgres://cinema:cinema@db:5432/cinema
       TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
       OMDB_API_KEY: ${OMDB_API_KEY}
+      # AI match verification (npm run enrich:ai); the step is skipped when unset
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       FLARESOLVERR_URL: http://flaresolverr:8191/v1
       USE_PROXY: ${USE_PROXY:-false}
       PROXY_URL: ${PROXY_URL:-}
@@ -74,11 +76,13 @@ services:
 
         { npm run scrape 2>&1;      echo $$? > /tmp/s1_exit; } | tee /tmp/s1.txt | tee -a $$log
         { npm run enrich 2>&1;      echo $$? > /tmp/s2_exit; } | tee /tmp/s2.txt | tee -a $$log
-        { npm run enrich:omdb 2>&1; echo $$? > /tmp/s3_exit; } | tee /tmp/s3.txt | tee -a $$log
+        { npm run enrich:ai 2>&1;   echo $$? > /tmp/s3_exit; } | tee /tmp/s3.txt | tee -a $$log
+        { npm run enrich:omdb 2>&1; echo $$? > /tmp/s4_exit; } | tee /tmp/s4.txt | tee -a $$log
 
         E1=$$(cat /tmp/s1_exit 2>/dev/null || echo '?')
         E2=$$(cat /tmp/s2_exit 2>/dev/null || echo '?')
         E3=$$(cat /tmp/s3_exit 2>/dev/null || echo '?')
+        E4=$$(cat /tmp/s4_exit 2>/dev/null || echo '?')
 
         {
           echo ""
@@ -97,9 +101,14 @@ services:
           [ -n "$$L" ] && tail -n +"$$L" /tmp/s2.txt || echo "  (no summary)"
 
           echo ""
-          echo "── 3. OMDB ENRICHMENT (exit $$E3) ──────────────────────────────"
+          echo "── 3. AI VERIFICATION (exit $$E3) ─────────────────────────────"
           L=$$(grep -n "Summary" /tmp/s3.txt 2>/dev/null | tail -1 | cut -d: -f1)
-          [ -n "$$L" ] && tail -n +"$$L" /tmp/s3.txt || echo "  (no summary)"
+          [ -n "$$L" ] && tail -n +"$$L" /tmp/s3.txt || tail -n 3 /tmp/s3.txt
+        
+          echo ""
+          echo "── 4. OMDB ENRICHMENT (exit $$E4) ──────────────────────────────"
+          L=$$(grep -n "Summary" /tmp/s4.txt 2>/dev/null | tail -1 | cut -d: -f1)
+          [ -n "$$L" ] && tail -n +"$$L" /tmp/s4.txt || echo "  (no summary)"
 
           echo ""
           echo "═══════════════════════════════════════════════════════════════"

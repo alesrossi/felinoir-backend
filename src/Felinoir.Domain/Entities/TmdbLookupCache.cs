@@ -10,4 +10,7 @@ public class TmdbLookupCache
     public string ScrapedOriginalTitle { get; set; } = "";
     public int TmdbId { get; set; }
     public string LookedUpAt { get; set; } = default!;
+
+    /// <summary>Poster of the scraped row this entry was written for (kept for the scraper's AI verification pass).</summary>
+    public string? ScrapedPosterUrl { get; set; }
 }

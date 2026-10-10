@@ -14,6 +14,7 @@ public interface IApplicationDbContext
     DbSet<Movie> Movies { get; }
     DbSet<Screening> Screenings { get; }
     DbSet<TmdbLookupCache> TmdbLookupCache { get; }
+    DbSet<AiMatchVerdict> AiMatchVerdicts { get; }
     DbSet<FelixCache> FelixCache { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
