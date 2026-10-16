@@ -22,6 +22,30 @@ services:
       - proxy
       - cinema_internal
 
+  # ── Legacy Next.js frontend (temporary) ───────────────────────────────────────
+  # Served at https://old.felinoir.it via nginx-proxy (TLS by letsencrypt companion).
+  # Requires a DNS A record for old.felinoir.it pointing at this server.
+  cinema-frontend-old:
+    image: alesrossi/cinema-frontend:old
+    container_name: cinema-old
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      BACKEND_URL: http://cinema-backend:3001
+      VIRTUAL_HOST: old.felinoir.it
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: old.felinoir.it
+      LETSENCRYPT_EMAIL: alessandro0024@gmail.com
+    depends_on:
+      cinema-backend:
+        condition: service_healthy
+    expose:
+      - "3000"
+    networks:
+      - proxy
+      - cinema_internal
+
   # ── REST API ──────────────────────────────────────────────────────────────────
   cinema-backend:
     image: alesrossi/cinema-backend:latest
