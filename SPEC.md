@@ -256,7 +256,7 @@ All fields use **camelCase** in JSON responses, mapped from snake_case columns.
 
 ## Database Schema
 
-Postgres 16. All timestamps stored as `TEXT` in ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`).
+Postgres 16. All timestamps stored as `TEXT` in ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`), except in `lobbies` / `lobby_participants`, which use `TIMESTAMPTZ`.
 
 ### `cinemas`
 
@@ -399,6 +399,51 @@ Single-row table (id = 1) that persists the active Gemini context cache referenc
 | `cache_name` | TEXT NOT NULL | Gemini resource name, e.g. `cachedContents/abc123` |
 | `expires_at` | TEXT NOT NULL | ISO 8601 UTC |
 | `created_at` | TEXT NOT NULL | |
+
+### `lobbies`
+
+A group outing to one screening. The screening's details are copied in once at creation; there is intentionally no FK to `screenings`, since screenings are re-scraped.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | default `gen_random_uuid()` |
+| `version` | BIGINT NOT NULL | default `1`; bumped by triggers, polled by clients |
+| `screening_id` | INTEGER | no FK; check `EXISTS` in `screenings` for the `available` flag |
+| `movie_id` | INTEGER | |
+| `movie_slug` | TEXT | |
+| `movie_title` | TEXT NOT NULL | |
+| `movie_title_en` | TEXT | |
+| `poster_url` | TEXT | |
+| `cinema_id` | TEXT NOT NULL | |
+| `cinema_name` | TEXT NOT NULL | |
+| `starts_at` | TIMESTAMPTZ NOT NULL | Rome wall-clock converted with `AT TIME ZONE 'Europe/Rome'`, both ways |
+| `is_ov` | BOOLEAN NOT NULL | default false |
+| `is_3d` | BOOLEAN NOT NULL | default false |
+| `booking_url` | TEXT | |
+| `note` | TEXT NOT NULL | default `''`; CHECK `lobbies_note_length` (≤ 500 chars) |
+| `created_at` | TIMESTAMPTZ NOT NULL | default `now()` |
+
+Index `lobbies_starts_at_idx` on `starts_at`. `expiresAt` is `starts_at + interval '48 hours'`, computed in queries; expired lobbies must be treated as not found.
+
+### `lobby_participants`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | default `gen_random_uuid()` |
+| `lobby_id` | UUID NOT NULL | FK → lobbies(id) ON DELETE CASCADE |
+| `name` | TEXT NOT NULL | CHECK `lobby_participants_name_length` (1–40 chars) |
+| `device_hash` | BYTEA | SHA-256 of the device token; null = unclaimed |
+| `joined_at` | TIMESTAMPTZ NOT NULL | default `now()` |
+
+- Unique constraint `lobby_participants_one_per_device` on `(lobby_id, device_hash)`. A 23505 on it maps to `already_joined`.
+- Unique index `lobby_participants_name_uniq` on `(lobby_id, lower(name))`. A 23505 on it maps to `name_taken`.
+- Claiming a name, in one transaction: first null this device's other entry in the lobby, then set it on the claimed row. The reverse order hits the unique constraint.
+
+### Lobby triggers & functions
+
+- `lobby_participants_bump_version` (AFTER INSERT/UPDATE/DELETE on `lobby_participants`): `lobbies.version + 1`.
+- `lobbies_bump_version_on_note` (BEFORE UPDATE OF `note`, when it actually changes): `version + 1`.
+- `delete_expired_lobbies()` returns the number of deleted lobbies (those with `starts_at` more than 48 h ago). Run it hourly via pg_cron or a backend job.
 
 ---
 

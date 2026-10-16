@@ -23,6 +23,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TmdbLookupCache> TmdbLookupCache => Set<TmdbLookupCache>();
     public DbSet<AiMatchVerdict> AiMatchVerdicts => Set<AiMatchVerdict>();
     public DbSet<FelixCache> FelixCache => Set<FelixCache>();
+    public DbSet<Lobby> Lobbies => Set<Lobby>();
+    public DbSet<LobbyParticipant> LobbyParticipants => Set<LobbyParticipant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

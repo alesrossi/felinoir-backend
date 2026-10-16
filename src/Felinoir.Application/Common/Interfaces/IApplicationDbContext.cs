@@ -16,6 +16,8 @@ public interface IApplicationDbContext
     DbSet<TmdbLookupCache> TmdbLookupCache { get; }
     DbSet<AiMatchVerdict> AiMatchVerdicts { get; }
     DbSet<FelixCache> FelixCache { get; }
+    DbSet<Lobby> Lobbies { get; }
+    DbSet<LobbyParticipant> LobbyParticipants { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

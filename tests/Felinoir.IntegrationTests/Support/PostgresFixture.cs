@@ -97,7 +97,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         await using var db = NewDbContext();
         await db.Database.ExecuteSqlRawAsync(
-            "TRUNCATE screenings, movies, cinemas, felix_cache, tmdb_lookup_cache, ai_match_verdicts RESTART IDENTITY CASCADE;");
+            "TRUNCATE screenings, movies, cinemas, felix_cache, tmdb_lookup_cache, ai_match_verdicts, lobbies, lobby_participants RESTART IDENTITY CASCADE;");
     }
 
     private static int GetFreeTcpPort()
