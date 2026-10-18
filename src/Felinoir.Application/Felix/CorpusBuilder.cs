@@ -124,6 +124,8 @@ public sealed class CorpusBuilder : ICorpusBuilder
         if (FirstNonEmpty(m.MetacriticScore) is { } mc) ratings.Add($"MC: {mc}");
         if (ratings.Count > 0) lines.Add(string.Join(" | ", ratings));
 
+        if (FirstNonEmpty(m.Awards) is { } awards) lines.Add($"Premi: {awards}");
+
         var keywords = ParseJsonNames(m.TmdbKeywords);
         if (keywords.Count > 0)
             lines.Add($"Keywords: {string.Join(", ", keywords.Take(MaxKeywords))}");

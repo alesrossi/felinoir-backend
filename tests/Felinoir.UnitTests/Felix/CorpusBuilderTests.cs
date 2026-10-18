@@ -81,7 +81,7 @@ public class CorpusBuilderTests
     }
 
     [Fact]
-    public async Task Renders_ratings_in_imdb_rt_mc_order_and_caps_keywords_at_12()
+    public async Task Renders_ratings_in_imdb_rt_mc_order_awards_and_caps_keywords_at_12()
     {
         using var db = InMemoryDb.Create();
         db.Cinemas.Add(Cinema("c", "Cine"));
@@ -89,6 +89,7 @@ public class CorpusBuilderTests
         m.ImdbRating = "8.1";
         m.RtRating = "92%";
         m.MetacriticScore = "75";
+        m.Awards = "Won 2 Oscars. 126 wins & 375 nominations total";
         m.TmdbKeywords = "[" + string.Join(",", Enumerable.Range(1, 15).Select(i => $"{{\"name\":\"k{i}\"}}")) + "]";
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
@@ -97,6 +98,7 @@ public class CorpusBuilderTests
         var corpus = await BuildAsync(db);
 
         Assert.Contains("IMDB: 8.1 | RT: 92% | MC: 75", corpus);
+        Assert.Contains("Premi: Won 2 Oscars. 126 wins & 375 nominations total", corpus);
         Assert.Contains("k12", corpus);
         Assert.DoesNotContain("k13", corpus);
     }

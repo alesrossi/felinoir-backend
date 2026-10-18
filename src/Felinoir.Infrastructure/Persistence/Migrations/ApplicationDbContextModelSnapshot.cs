@@ -317,6 +317,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("actors");
 
+                    b.Property<string>("Awards")
+                        .HasColumnType("text")
+                        .HasColumnName("awards");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("text")
                         .HasColumnName("content_rating");
@@ -410,6 +414,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                     b.Property<string>("TmdbCountry")
                         .HasColumnType("text")
                         .HasColumnName("tmdb_country");
+
+                    b.Property<string>("TmdbCredits")
+                        .HasColumnType("text")
+                        .HasColumnName("tmdb_credits");
 
                     b.Property<string>("TmdbEnrichedAt")
                         .HasColumnType("text")

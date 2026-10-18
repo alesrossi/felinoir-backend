@@ -54,6 +54,13 @@ public class Movie
     public string? TmdbKeywords { get; set; }
     public string? TmdbRecommendations { get; set; }
     public string? TmdbWatchProviders { get; set; }
+
+    /// <summary>
+    /// Trimmed TMDB credits as raw JSON: <c>{ directors, writers, cast, composers, cinematographers }</c>,
+    /// each person <c>{ id, name, profile_path }</c> (writers add <c>jobs</c>, cast adds <c>character</c>).
+    /// Written by the scraper's TMDB enrichment.
+    /// </summary>
+    public string? TmdbCredits { get; set; }
     public string? TmdbEnrichedAt { get; set; }
 
     public string? ContentRating { get; set; }
@@ -66,6 +73,9 @@ public class Movie
     public string? ImdbVotes { get; set; }
     public string? RtRating { get; set; }
     public string? MetacriticScore { get; set; }
+
+    /// <summary>OMDb's awards line as given, e.g. "Won 2 Oscars. 126 wins &amp; 375 nominations total".</summary>
+    public string? Awards { get; set; }
     public string? OmdbEnrichedAt { get; set; }
 
     public string CreatedAt { get; set; } = default!;

@@ -267,9 +267,10 @@ All fields use **camelCase** in JSON responses, mapped from snake_case columns.
   tmdbKeywords?: string             // JSON: { name }[]
   tmdbRecommendations?: string      // JSON array
   tmdbWatchProviders?: string       // JSON object
+  tmdbCredits?: string              // JSON: TmdbCredits, see below
   tmdbEnrichedAt?: string           // ISO 8601 UTC
 
-  contentRating?: string  // e.g. "R", "PG-13"
+  contentRating?: string  // Italian certification from TMDB, e.g. "T", "VM14"
   writer?: string
   actors?: string
   released?: string       // "YYYY-MM-DD"
@@ -279,12 +280,28 @@ All fields use **camelCase** in JSON responses, mapped from snake_case columns.
   imdbVotes?: string
   rtRating?: string       // Rotten Tomatoes %
   metacriticScore?: string
+  awards?: string         // e.g. "Won 2 Oscars. 126 wins & 375 nominations total"
   omdbEnrichedAt?: string
 
   createdAt: string
   updatedAt: string
 }
 ```
+
+`tmdbCredits` is a raw JSON string (like the other `tmdb*` blobs), written by the scraper's TMDB enrichment:
+
+```ts
+type Person = { id: number, name: string, profile_path: string | null }   // TMDB person id
+type TmdbCredits = {
+  directors: Person[]
+  writers: (Person & { jobs: string[] })[]   // "Screenplay" | "Writer" | "Novel" | "Story", one entry per person
+  cast: (Person & { character: string })[]   // top 12 by billing order
+  composers: Person[]                        // "Original Music Composer" / "Music"
+  cinematographers: Person[]                 // "Director of Photography"
+}
+```
+
+Photo URL: `https://image.tmdb.org/t/p/w185{profile_path}` (other sizes: `w45`, `h632`, `original`).
 
 ### Screening
 
@@ -380,6 +397,7 @@ Index: `idx_cinemas_city` on `city`.
 | `tmdb_keywords` | TEXT | JSON blob |
 | `tmdb_recommendations` | TEXT | JSON blob |
 | `tmdb_watch_providers` | TEXT | JSON blob |
+| `tmdb_credits` | TEXT | JSON blob (`TmdbCredits`) |
 | `tmdb_enriched_at` | TEXT | |
 | `content_rating` | TEXT | |
 | `writer` | TEXT | |
@@ -389,6 +407,7 @@ Index: `idx_cinemas_city` on `city`.
 | `imdb_votes` | TEXT | |
 | `rt_rating` | TEXT | |
 | `metacritic_score` | TEXT | |
+| `awards` | TEXT | OMDb awards line |
 | `omdb_enriched_at` | TEXT | |
 | `created_at` | TEXT NOT NULL | |
 | `updated_at` | TEXT NOT NULL | |
