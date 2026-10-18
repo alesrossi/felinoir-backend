@@ -29,7 +29,7 @@ builder.Services.AddOpenApi(options =>
             Version = "v1",
             Description =
                 "Cinema backend for felinoir.it — films, screenings and cinemas in Rome, "
-                + "plus the Felix AI chat assistant. Public, unauthenticated, CORS open to all origins.",
+                + "plus the Felix AI chat assistant and shareable screening lobbies. Public, unauthenticated, CORS open to all origins.",
         };
         return Task.CompletedTask;
     });
@@ -62,6 +62,7 @@ app.MapMovieEndpoints();
 app.MapCinemaEndpoints();
 app.MapScreeningEndpoints();
 app.MapFelixEndpoints();
+app.MapLobbyEndpoints();
 
 app.Run();
 

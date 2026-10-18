@@ -139,6 +139,64 @@ Sends a chat message to Felix (Gemini-backed cinema assistant).
 
 ---
 
+### Lobbies
+
+Shareable group outings to a screening (`/e/<id>` on the frontend). Every request must carry `X-Device-Token`, which the Next.js proxy sets from its `felinoir_device` cookie. Only `sha256(token)` is stored, and it decides `isMe` / `meId`. Every change bumps `version` through database triggers and returns the full lobby (`200`). Lobbies expire 48 h after their screening starts and are then `404`. Editing stays open until they expire.
+
+| Method & path | Body | Does |
+|---|---|---|
+| `POST /lobbies` | `{ screeningId, name, note? }` | Snapshot of the screening from the schedule; creator joins first. `201` + `Location`. |
+| `GET /lobbies/:id?ifVersion=N` | | `304` (no body) if still at version N, else `200`. |
+| `PATCH /lobbies/:id` | `{ note }` | Edit the note (anyone). |
+| `POST /lobbies/:id/participants` | `{ name }` | Join with this device. |
+| `PATCH /lobbies/:id/participants/:pid` | `{ name }` | Rename anyone. |
+| `DELETE /lobbies/:id/participants/:pid` | | Remove anyone (also how you leave). |
+| `POST /lobbies/:id/participants/:pid/claim` | | Move this device onto that entry, off any other entry in the lobby. |
+
+**Response**
+
+```ts
+{
+  id: string                // uuid
+  version: number
+  screening: {
+    screeningId: number | null   // null once it left the schedule
+    available: boolean
+    movieId: number | null
+    movieSlug: string | null
+    movieTitle: string           // tmdbTitle ?? title at creation
+    movieTitleEn: string | null  // tmdbTitleEn
+    posterUrl: string | null     // tmdbPosterUrl ?? posterUrl
+    cinemaId: string
+    cinemaName: string
+    datetime: string             // Rome wall clock, e.g. "2026-10-17T21:00:00"
+    isOV: boolean
+    is3D: boolean
+    bookingUrl: string | null
+  }
+  note: string
+  participants: { id: string, name: string, joinedAt: string /* ISO UTC */, isMe: boolean }[]  // by joinedAt
+  meId: string | null
+  expiresAt: string         // ISO UTC, starts_at + 48 h
+}
+```
+
+Unlike the rest of the API, nullable fields here are sent as `null`, never omitted.
+
+**Validation and errors** (`{ "error": "<code>" }`): names are trimmed, 1–40 characters, with no control characters. Notes are at most 500 characters.
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `missing_device` | No `X-Device-Token` header |
+| 400 | `invalid_name` / `invalid_note` | Fails validation |
+| 404 | `not_found` | Unknown, malformed or expired lobby; unknown participant |
+| 409 | `name_taken` | Name already in the lobby (case-insensitive), on join or rename |
+| 409 | `already_joined` | This device already has an entry |
+| 422 | `screening_not_found` | `POST /lobbies` with an unknown screening |
+| 422 | `screening_past` | `POST /lobbies` for a screening that has started |
+
+---
+
 ## Entities
 
 All fields use **camelCase** in JSON responses, mapped from snake_case columns.
@@ -443,7 +501,7 @@ Index `lobbies_starts_at_idx` on `starts_at`. `expiresAt` is `starts_at + interv
 
 - `lobby_participants_bump_version` (AFTER INSERT/UPDATE/DELETE on `lobby_participants`): `lobbies.version + 1`.
 - `lobbies_bump_version_on_note` (BEFORE UPDATE OF `note`, when it actually changes): `version + 1`.
-- `delete_expired_lobbies()` returns the number of deleted lobbies (those with `starts_at` more than 48 h ago). Run it hourly via pg_cron or a backend job.
+- `delete_expired_lobbies()` returns the number of deleted lobbies (those with `starts_at` more than 48 h ago). The API calls it at startup and hourly (`ExpiredLobbyCleanupService`), since the server has no pg_cron.
 
 ---
 

@@ -1,5 +1,6 @@
 using Felinoir.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Felinoir.UnitTests.TestSupport;
 
@@ -13,6 +14,8 @@ internal static class InMemoryDb
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"felinoir-unit-{Guid.NewGuid()}")
+            // InMemory has no transactions; services that open one still run, just without isolation.
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         return new ApplicationDbContext(options);

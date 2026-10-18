@@ -24,6 +24,9 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
+        // No pg_cron on the server, so expired lobbies are deleted from here.
+        services.AddHostedService<ExpiredLobbyCleanupService>();
+
         var cinemasPath = configuration["CINEMAS_CONFIG_PATH"];
         cinemasPath = string.IsNullOrWhiteSpace(cinemasPath) ? CinemasConfigLocator.Locate() : cinemasPath;
         services.AddSingleton<ICinemaConfigProvider>(_ => new CinemasYamlConfigProvider(cinemasPath));

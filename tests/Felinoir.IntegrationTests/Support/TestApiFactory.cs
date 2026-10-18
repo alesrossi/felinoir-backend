@@ -1,4 +1,5 @@
 using Felinoir.Application.Felix;
+using Felinoir.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -18,6 +19,7 @@ namespace Felinoir.IntegrationTests.Support;
 ///
 /// Felix is swapped for an unconfigured stub so the 503 branch is deterministic
 /// regardless of whether a real GEMINI_API_KEY is present in the environment.
+/// Endpoint tests that need the database use <see cref="PostgresApiFactory"/> instead.
 /// </summary>
 public sealed class TestApiFactory : WebApplicationFactory<Program>
 {
@@ -33,6 +35,9 @@ public sealed class TestApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IFelixService>();
             services.AddScoped<IFelixService, UnconfiguredFelix>();
+
+            // No database here: the lobby cleanup would only log connection failures.
+            services.RemoveHostedService<ExpiredLobbyCleanupService>();
         });
     }
 

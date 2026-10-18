@@ -1,6 +1,8 @@
+using Felinoir.Application.Common.Exceptions;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Reflection;
 
 namespace Felinoir.Infrastructure.Persistence;
@@ -25,6 +27,21 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<FelixCache> FelixCache => Set<FelixCache>();
     public DbSet<Lobby> Lobbies => Set<Lobby>();
     public DbSet<LobbyParticipant> LobbyParticipants => Set<LobbyParticipant>();
+
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
+        {
+            // Surface the constraint name without leaking Npgsql into the Application layer.
+            throw new UniqueConstraintViolationException(pg.ConstraintName, ex);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

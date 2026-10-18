@@ -1,8 +1,10 @@
 using Felinoir.Application.Cinemas;
 using Felinoir.Application.Felix;
+using Felinoir.Application.Lobbies;
 using Felinoir.Application.Movies;
 using Felinoir.Application.Screenings;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Felinoir.Application;
 
@@ -14,6 +16,8 @@ public static class DependencyInjection
         services.AddScoped<ICinemaService, CinemaService>();
         services.AddScoped<IScreeningService, ScreeningService>();
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
+        services.AddScoped<ILobbyService, LobbyService>();
+        services.TryAddSingleton(TimeProvider.System);
 
         // Felix readiness state is process-wide; the service that uses it is per-request.
         services.AddSingleton<FelixState>();

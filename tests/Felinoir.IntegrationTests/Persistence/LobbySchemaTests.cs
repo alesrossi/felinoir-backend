@@ -1,14 +1,14 @@
+using Felinoir.Application.Common.Exceptions;
 using Felinoir.Domain.Entities;
 using Felinoir.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Felinoir.IntegrationTests.Persistence;
 
 /// <summary>
 /// Checks that the EF mapping of <c>lobbies</c> / <c>lobby_participants</c> works against
 /// the scrapers-owned DDL: database defaults, the version-bumping triggers, the
-/// constraints the API maps to error codes, and the cleanup function.
+/// constraints the API maps to error codes (surfaced as UniqueConstraintViolationException), and the cleanup function.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public class LobbySchemaTests : PostgresTestBase
@@ -66,11 +66,9 @@ public class LobbySchemaTests : PostgresTestBase
 
         await using var db2 = Fixture.NewDbContext();
         db2.LobbyParticipants.Add(new LobbyParticipant { LobbyId = lobby.Id, Name = "anna" });
-        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
+        var ex = await Assert.ThrowsAsync<UniqueConstraintViolationException>(() => db2.SaveChangesAsync());
 
-        var pg = Assert.IsType<PostgresException>(ex.InnerException);
-        Assert.Equal(PostgresErrorCodes.UniqueViolation, pg.SqlState);
-        Assert.Equal("lobby_participants_name_uniq", pg.ConstraintName);
+        Assert.Equal("lobby_participants_name_uniq", ex.ConstraintName);
     }
 
     [Fact]
@@ -88,10 +86,9 @@ public class LobbySchemaTests : PostgresTestBase
 
         await using var db2 = Fixture.NewDbContext();
         db2.LobbyParticipants.Add(new LobbyParticipant { LobbyId = lobby.Id, Name = "Dario", DeviceHash = hash });
-        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
+        var ex = await Assert.ThrowsAsync<UniqueConstraintViolationException>(() => db2.SaveChangesAsync());
 
-        var pg = Assert.IsType<PostgresException>(ex.InnerException);
-        Assert.Equal("lobby_participants_one_per_device", pg.ConstraintName);
+        Assert.Equal("lobby_participants_one_per_device", ex.ConstraintName);
     }
 
     [Fact]

@@ -34,6 +34,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     private string _connectionString = null!;
     private IContainer _container = null!;
     private DbContextOptions<ApplicationDbContext> _options = null!;
+    private PostgresApiFactory? _api;
 
     public async Task InitializeAsync()
     {
@@ -87,7 +88,14 @@ public sealed class PostgresFixture : IAsyncLifetime
         }
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (_api is not null) await _api.DisposeAsync();
+        await _container.DisposeAsync();
+    }
+
+    /// <summary>The API wired to this database; booted on first use and shared by the collection.</summary>
+    public PostgresApiFactory Api => _api ??= new PostgresApiFactory(_connectionString);
 
     /// <summary>A new context per call — mirrors the scoped lifetime services get in the app.</summary>
     public ApplicationDbContext NewDbContext() => new(_options);

@@ -1,5 +1,6 @@
 using Felinoir.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Felinoir.Application.Common.Interfaces;
 
@@ -19,5 +20,12 @@ public interface IApplicationDbContext
     DbSet<Lobby> Lobbies { get; }
     DbSet<LobbyParticipant> LobbyParticipants { get; }
 
+    /// <summary>For explicit transactions when one operation needs several ordered saves.</summary>
+    DatabaseFacade Database { get; }
+
+    /// <summary>
+    /// Throws <see cref="Common.Exceptions.UniqueConstraintViolationException"/> when a unique
+    /// constraint or index is violated.
+    /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
