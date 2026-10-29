@@ -10,6 +10,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<CorpusSnapshotLoader>();
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
         services.AddScoped<LobbyViews>();
         services.TryAddSingleton(TimeProvider.System);

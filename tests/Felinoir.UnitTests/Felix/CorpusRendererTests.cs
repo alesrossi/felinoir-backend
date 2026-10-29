@@ -1,58 +1,55 @@
 using Felinoir.Application.Felix;
 using Felinoir.Domain.Entities;
-using Felinoir.Infrastructure.Persistence;
-using Felinoir.UnitTests.TestSupport;
+using Felinoir.Domain.ValueObjects;
 
 namespace Felinoir.UnitTests.Felix;
 
-public class CorpusBuilderTests
+/// <summary>
+/// The corpus text from plain data: no database. Which screenings are upcoming and which cinemas
+/// belong to the city is the loader's job (see the integration tests); here every screening given
+/// is an upcoming one.
+/// </summary>
+public class CorpusRendererTests
 {
-    /// <summary>2026-06-22 20:30 in Rome (CEST, UTC+2).</summary>
-    private static readonly DateTimeOffset Now = new(2026, 6, 22, 18, 30, 0, TimeSpan.Zero);
-
     // Screening times are Italian wall clock, as the scrapers store them.
     private const string Future = "2026-06-24T21:00:00";
-    private const string Past = "2026-06-20T21:00:00";
 
-    private const string Milan = "milan";
-
-    /// <summary>An empty database with Rome and Milan.</summary>
-    private static ApplicationDbContext NewDb()
+    /// <summary>The movies, cinemas and screenings a test renders.</summary>
+    private sealed class Data
     {
-        var db = InMemoryDb.Create();
-        db.Cities.AddRange(
-            new City { Id = City.RomeId, Name = "Roma", CreatedAt = "x", UpdatedAt = "x" },
-            new City { Id = Milan, Name = "Milano", CreatedAt = "x", UpdatedAt = "x" });
-        db.SaveChanges();
-        return db;
+        public List<Movie> Movies { get; } = [];
+        public List<Cinema> Cinemas { get; } = [];
+        public List<Screening> Screenings { get; } = [];
     }
 
-    private static Task<string> BuildAsync(ApplicationDbContext db, string cityId = City.RomeId) =>
-        new CorpusBuilder(db, new FixedTimeProvider(Now)).BuildAsync(cityId);
+    private static Data NewDb() => new();
+
+    private static Task<string> BuildAsync(Data db)
+    {
+        Assert.True(ScreeningTime.TryParse("2026-06-22T20:30:00", out var now));
+        return Task.FromResult(CorpusRenderer.Render(new CorpusSnapshot(
+            "Roma", now, db.Movies.OrderBy(m => m.Id).ToList(), db.Cinemas, db.Screenings)));
+    }
 
     [Fact]
-    public async Task Includes_only_movies_with_a_future_screening()
+    public async Task Includes_only_movies_with_an_upcoming_screening()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.Add(Cinema("cinema-farnese", "Cinema Farnese"));
-        db.Movies.AddRange(Movie(1, "Showing Now"), Movie(2, "Not Scheduled"), Movie(3, "Past Only"));
-        db.Screenings.AddRange(
-            Screening(1, 1, "cinema-farnese", Future),
-            Screening(2, 3, "cinema-farnese", Past));
-        await db.SaveChangesAsync();
+        db.Movies.AddRange(Movie(1, "Showing Now"), Movie(2, "Not Scheduled"));
+        db.Screenings.Add(Screening(1, 1, "cinema-farnese", Future));
 
         var corpus = await BuildAsync(db);
 
         Assert.Contains("## Showing Now", corpus);
         Assert.DoesNotContain("Not Scheduled", corpus);
-        Assert.DoesNotContain("Past Only", corpus);
         Assert.Contains("Totale: 1 film", corpus);
     }
 
     [Fact]
     public async Task Prefers_tmdb_title_and_appends_distinct_original_and_english_titles()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
         var m = new Movie
         {
@@ -66,7 +63,6 @@ public class CorpusBuilderTests
         };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
-        await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
 
@@ -76,13 +72,12 @@ public class CorpusBuilderTests
     [Fact]
     public async Task Tags_ov_3d_and_open_air_and_groups_by_cinema()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.AddRange(Cinema("arena", "Arena Estiva", openAir: true), Cinema("indoor", "Sala Chiusa"));
         db.Movies.Add(Movie(1, "Film"));
         db.Screenings.AddRange(
             Screening(1, 1, "arena", Future, isOV: true),
             Screening(2, 1, "indoor", Future, is3D: true));
-        await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
 
@@ -95,7 +90,7 @@ public class CorpusBuilderTests
     [Fact]
     public async Task Renders_ratings_in_imdb_rt_mc_order_awards_and_caps_keywords_at_12()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
         var m = new Movie
         {
@@ -111,7 +106,6 @@ public class CorpusBuilderTests
         };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
-        await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
 
@@ -124,7 +118,7 @@ public class CorpusBuilderTests
     [Fact]
     public async Task Extracts_country_and_collection_names_from_json_blobs()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
         var m = new Movie
         {
@@ -137,7 +131,6 @@ public class CorpusBuilderTests
         };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
-        await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
 
@@ -148,7 +141,7 @@ public class CorpusBuilderTests
     [Fact]
     public async Task Tolerates_malformed_json_blobs()
     {
-        using var db = NewDb();
+        var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
         var m = new Movie
         {
@@ -161,7 +154,6 @@ public class CorpusBuilderTests
         };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
-        await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
 
@@ -171,54 +163,30 @@ public class CorpusBuilderTests
     }
 
     [Fact]
-    public async Task Compares_screenings_with_the_current_italian_time()
+    public async Task The_heading_names_the_city_and_the_italian_date()
     {
-        // At 20:30 in Rome: 20:00 has started, 21:00 hasn't. Compared with the UTC clock
-        // (18:30), the 20:00 screening used to count as upcoming.
-        using var db = NewDb();
-        db.Cinemas.Add(Cinema("c", "Cine"));
-        db.Movies.AddRange(Movie(1, "Started Half An Hour Ago"), Movie(2, "Starts At Nine"));
-        db.Screenings.AddRange(
-            Screening(1, 1, "c", "2026-06-22T20:00:00"),
-            Screening(2, 2, "c", "2026-06-22T21:00:00"));
-        await db.SaveChangesAsync();
+        var corpus = await BuildAsync(NewDb());
 
-        var corpus = await BuildAsync(db);
-
-        Assert.DoesNotContain("Started Half An Hour Ago", corpus);
-        Assert.Contains("## Starts At Nine", corpus);
-        Assert.Contains("lun 22/06 21:00", corpus);
+        Assert.StartsWith("# Film in programmazione a Roma — 2026-06-22\n", corpus);
     }
 
     [Fact]
-    public async Task Covers_only_the_cinemas_of_its_city()
+    public void Display_title_prefers_tmdbs_and_ratings_prefer_imdb_then_rt_then_mc()
     {
-        using var db = NewDb();
-        db.Cinemas.AddRange(Cinema("c", "Cine Romano"), Cinema("milano-1", "Cinema Milanese", cityId: Milan));
-        db.Movies.AddRange(Movie(1, "In Rome"), Movie(2, "Only In Milan"));
-        db.Screenings.AddRange(
-            Screening(1, 1, "c", Future),
-            Screening(2, 2, "milano-1", Future),
-            Screening(3, 1, "milano-1", Future));
-        await db.SaveChangesAsync();
+        var movie = new Movie
+        {
+            Id = 1, Title = "Scraped", TmdbTitle = "", MetacriticScore = "70", RtRating = "90%",
+            CreatedAt = Stamp, UpdatedAt = Stamp,
+        };
 
-        var rome = await BuildAsync(db);
-        var milan = await BuildAsync(db, Milan);
-
-        Assert.StartsWith("# Film in programmazione a Roma — 2026-06-22", rome);
-        Assert.Contains("## In Rome", rome);
-        Assert.DoesNotContain("Only In Milan", rome);
-        Assert.DoesNotContain("Cinema Milanese", rome);
-
-        Assert.StartsWith("# Film in programmazione a Milano — 2026-06-22", milan);
-        Assert.Contains("Totale: 2 film", milan);
-        Assert.DoesNotContain("Cine Romano", milan);
+        Assert.Equal("Scraped", CorpusRenderer.DisplayTitle(movie)); // an empty TMDB title doesn't count
+        Assert.Equal(["RT: 90%", "MC: 70"], CorpusRenderer.PreferredRatings(movie));
     }
 
     [Fact]
     public async Task Empty_when_no_active_movies()
     {
-        using var db = NewDb();
+        var db = NewDb();
         var corpus = await BuildAsync(db);
 
         Assert.Contains("Totale: 0 film", corpus);
@@ -234,12 +202,12 @@ public class CorpusBuilderTests
         UpdatedAt = Stamp,
     };
 
-    private static Cinema Cinema(string id, string name, bool openAir = false, string cityId = City.RomeId) => new()
+    private static Cinema Cinema(string id, string name, bool openAir = false) => new()
     {
         Id = id,
         Name = name,
         OpenAir = openAir,
-        CityId = cityId,
+        CityId = City.RomeId,
         Country = "IT",
         Website = $"https://{id}.example.com",
         ScheduleUrl = $"https://{id}.example.com/s",
