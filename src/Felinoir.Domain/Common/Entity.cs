@@ -1,0 +1,24 @@
+namespace Felinoir.Domain.Common;
+
+/// <summary>
+/// Something with an identity that outlives changes to its other values: two entities are the
+/// same when they are the same type with the same <see cref="Id"/>.
+/// </summary>
+public abstract class Entity<TId> : IEquatable<Entity<TId>>
+    where TId : notnull
+{
+    protected Entity(TId id) => Id = id;
+
+    public TId Id { get; protected init; }
+
+    public bool Equals(Entity<TId>? other) =>
+        other is not null && GetType() == other.GetType() && EqualityComparer<TId>.Default.Equals(Id, other.Id);
+
+    public override bool Equals(object? obj) => obj is Entity<TId> other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(GetType(), Id);
+
+    public static bool operator ==(Entity<TId>? left, Entity<TId>? right) => Equals(left, right);
+
+    public static bool operator !=(Entity<TId>? left, Entity<TId>? right) => !Equals(left, right);
+}

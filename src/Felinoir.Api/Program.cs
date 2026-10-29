@@ -4,6 +4,7 @@ using Felinoir.Api.Endpoints;
 using Felinoir.Api.Errors;
 using Felinoir.Api.Observability;
 using Felinoir.Application;
+using Felinoir.Application.Common.Behaviors;
 using Felinoir.Infrastructure;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -32,6 +33,20 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+// Handlers are found at compile time by the source generator. Scoped, because handlers use the
+// request's DbContext. The behaviours run in this order around every handler (rework plan, step 3).
+builder.Services.AddMediator(options =>
+{
+    options.ServiceLifetime = ServiceLifetime.Scoped;
+    options.Assemblies = [typeof(Felinoir.Application.DependencyInjection)];
+    options.PipelineBehaviors =
+    [
+        typeof(LoggingBehavior<,>),
+        typeof(ValidationBehavior<,>),
+        typeof(UnitOfWorkBehavior<,>),
+    ];
+});
 
 // OpenAPI document describing every endpoint, surfaced through the Scalar UI.
 builder.Services.AddOpenApi(options =>

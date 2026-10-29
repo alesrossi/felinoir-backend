@@ -13,7 +13,7 @@ namespace Felinoir.Infrastructure.Persistence;
 /// snake_case column/table naming is applied via UseSnakeCaseNamingConvention()
 /// in DI; per-property exceptions live in the IEntityTypeConfiguration classes.
 /// </summary>
-public class ApplicationDbContext : DbContext, IApplicationDbContext
+public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWork, IReadDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -29,6 +29,15 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<FelixCache> FelixCache => Set<FelixCache>();
     public DbSet<Lobby> Lobbies => Set<Lobby>();
     public DbSet<LobbyParticipant> LobbyParticipants => Set<LobbyParticipant>();
+
+    // The read side: untracked, so nothing read through IReadDbContext can be saved.
+    IQueryable<City> IReadDbContext.Cities => Cities.AsNoTracking();
+    IQueryable<Cinema> IReadDbContext.Cinemas => Cinemas.AsNoTracking();
+    IQueryable<Movie> IReadDbContext.Movies => Movies.AsNoTracking();
+    IQueryable<Screening> IReadDbContext.Screenings => Screenings.AsNoTracking();
+    IQueryable<Lobby> IReadDbContext.Lobbies => Lobbies.AsNoTracking();
+    IQueryable<LobbyParticipant> IReadDbContext.LobbyParticipants => LobbyParticipants.AsNoTracking();
+    IQueryable<FelixCache> IReadDbContext.FelixCache => FelixCache.AsNoTracking();
 
     public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)

@@ -6,7 +6,7 @@ namespace Felinoir.Application.Common.Results;
 /// The outcome of an operation that returns nothing: success, or an <see cref="Results.Error"/>.
 /// An error converts implicitly, so a handler can <c>return Error.NotFound("not_found");</c>.
 /// </summary>
-public class Result
+public class Result : IFailureResult<Result>
 {
     protected Result(Error? error) => Error = error;
 
@@ -18,6 +18,8 @@ public class Result
     public bool IsSuccess => Error is null;
 
     public static Result Failure(Error error) => new(error);
+
+    static Result IFailureResult<Result>.Failed(Error error) => Failure(error);
 
     public static Result<T> Ok<T>(T value) => value;
 
@@ -32,7 +34,7 @@ public class Result
 /// The outcome of an operation that returns a <typeparamref name="T"/>: the value, or an
 /// <see cref="Results.Error"/>. Both convert implicitly, so a handler can return either.
 /// </summary>
-public sealed class Result<T> : Result
+public sealed class Result<T> : Result, IFailureResult<Result<T>>
 {
     private readonly T? _value;
 
@@ -44,6 +46,8 @@ public sealed class Result<T> : Result
     public T Value => IsSuccess
         ? _value!
         : throw new InvalidOperationException($"A failed result has no value (error: {Error.Code}).");
+
+    static Result<T> IFailureResult<Result<T>>.Failed(Error error) => new(error);
 
     public TOut Match<TOut>(Func<T, TOut> success, Func<Error, TOut> failure) =>
         IsSuccess ? success(_value!) : failure(Error);

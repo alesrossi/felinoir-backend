@@ -3,6 +3,7 @@ using Felinoir.Application.Felix;
 using Felinoir.Application.Lobbies;
 using Felinoir.Application.Movies;
 using Felinoir.Application.Screenings;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,6 +19,10 @@ public static class DependencyInjection
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
         services.AddScoped<ILobbyService, LobbyService>();
         services.TryAddSingleton(TimeProvider.System);
+
+        // Request validators, run by ValidationBehavior. The mediator itself (handlers and the
+        // pipeline) is registered by the host, where its source generator runs.
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, ServiceLifetime.Scoped);
 
         // Felix readiness state is process-wide; the service that uses it is per-request.
         services.AddSingleton<FelixState>();
