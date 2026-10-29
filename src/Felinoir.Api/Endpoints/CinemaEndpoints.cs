@@ -1,5 +1,6 @@
-using Felinoir.Application.Cinemas;
-using Felinoir.Domain.Entities;
+using Felinoir.Api.Errors;
+using Felinoir.Application.Features.Cinemas;
+using Mediator;
 
 namespace Felinoir.Api.Endpoints;
 
@@ -9,23 +10,19 @@ public static class CinemaEndpoints
     {
         var group = app.MapGroup("/cinemas").WithTags("Cinemas");
 
-        group.MapGet("/", async (string? city, ICinemaService cinemas, CancellationToken ct) =>
-            Results.Ok(await cinemas.GetAllAsync(city, ct)))
+        group.MapGet("/", async (string? city, ISender sender, CancellationToken ct) =>
+                TypedResults.Ok(await sender.Send(new GetCinemasQuery(city), ct)))
             .WithSummary("List cinemas")
             .WithDescription(
                 "Returns all cinemas, ordered by name. With `city` (a city id such as `rome`, or its name "
-                + "such as `Roma`), only the cinemas listed under that city.")
-            .Produces<List<Cinema>>();
+                + "such as `Roma`), only the cinemas listed under that city.");
 
-        group.MapGet("/{id}", async (string id, ICinemaService cinemas, CancellationToken ct) =>
-        {
-            var cinema = await cinemas.GetByIdAsync(id, ct);
-            return cinema is null ? Results.NotFound(new ErrorResponse("Not found")) : Results.Ok(cinema);
-        })
+        group.MapGet("/{id}", async (string id, ISender sender, CancellationToken ct) =>
+                (await sender.Send(new GetCinemaByIdQuery(id), ct)).ToHttp())
             .WithSummary("Get cinema by id")
             .WithDescription("Returns a single cinema by its string id (slug, e.g. `cinema-farnese`), or `404`.")
-            .Produces<Cinema>()
-            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+            .Produces<CinemaResponse>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
     }

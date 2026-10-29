@@ -70,9 +70,13 @@ Content-Type: application/json; charset=utf-8
 
 ### GET /cinemas/does-not-exist
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Not found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "Not found",
+  "traceId": "TraceId"
 }
 
 ### GET /cinemas?city=Roma

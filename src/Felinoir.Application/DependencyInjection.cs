@@ -1,8 +1,5 @@
-using Felinoir.Application.Cinemas;
 using Felinoir.Application.Felix;
 using Felinoir.Application.Lobbies;
-using Felinoir.Application.Movies;
-using Felinoir.Application.Screenings;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -13,9 +10,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<IMovieService, MovieService>();
-        services.AddScoped<ICinemaService, CinemaService>();
-        services.AddScoped<IScreeningService, ScreeningService>();
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
         services.AddScoped<ILobbyService, LobbyService>();
         services.TryAddSingleton(TimeProvider.System);

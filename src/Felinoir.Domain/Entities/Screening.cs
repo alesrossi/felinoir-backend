@@ -6,28 +6,28 @@ namespace Felinoir.Domain.Entities;
 /// </summary>
 public class Screening
 {
-    public int Id { get; set; }
-    public int MovieId { get; set; }
-    public string CinemaId { get; set; } = default!;
+    public int Id { get; init; }
+    public int MovieId { get; init; }
+    public string CinemaId { get; init; } = default!;
 
     /// <summary>
     /// Italian wall-clock time with no offset, stored as TEXT, e.g. "2026-06-22T20:30:00"; read it
     /// with <see cref="ValueObjects.ScreeningTime"/>.
     /// </summary>
-    public string Datetime { get; set; } = default!;
+    public string Datetime { get; init; } = default!;
 
-    public string? Hall { get; set; }
-    public bool Is3D { get; set; }
-    public bool IsOV { get; set; }
-    public string? SubtitleLanguage { get; set; }
-    public string? BookingUrl { get; set; }
+    public string? Hall { get; init; }
+    public bool Is3D { get; init; }
+    public bool IsOV { get; init; }
+    public string? SubtitleLanguage { get; init; }
+    public string? BookingUrl { get; init; }
 
     /// <summary>Arbitrary JSON blob from the scraper; stored/returned as a raw string.</summary>
-    public string? Meta { get; set; }
+    public string? Meta { get; init; }
 
-    public string CreatedAt { get; set; } = default!;
-    public string UpdatedAt { get; set; } = default!;
+    public string CreatedAt { get; init; } = default!;
+    public string UpdatedAt { get; init; } = default!;
 
-    public Movie? Movie { get; set; }
-    public Cinema? Cinema { get; set; }
+    public Movie? Movie { get; init; }
+    public Cinema? Cinema { get; init; }
 }

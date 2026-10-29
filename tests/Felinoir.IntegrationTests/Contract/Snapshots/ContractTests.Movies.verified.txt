@@ -367,16 +367,24 @@ Content-Type: application/json; charset=utf-8
 
 ### GET /movies/999
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Not found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "Not found",
+  "traceId": "TraceId"
 }
 
 ### GET /movies/abc
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Invalid id"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "error": "Invalid id",
+  "traceId": "TraceId"
 }
 
 ### GET /movies/slug/dune-parte-due
@@ -459,9 +467,13 @@ Content-Type: application/json; charset=utf-8
 
 ### GET /movies/slug/does-not-exist
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Not found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "Not found",
+  "traceId": "TraceId"
 }
 
 ### GET /movies?city=rome   (every movie with a screening in Rome)

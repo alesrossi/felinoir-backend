@@ -54,10 +54,16 @@ public class CorpusBuilderTests
     {
         using var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
-        var m = Movie(1, "Titolo Scrape");
-        m.TmdbTitle = "Titolo TMDB";
-        m.OriginalTitle = "Original Name";
-        m.TmdbTitleEn = "English Name";
+        var m = new Movie
+        {
+            Id = 1,
+            Title = "Titolo Scrape",
+            TmdbTitle = "Titolo TMDB",
+            OriginalTitle = "Original Name",
+            TmdbTitleEn = "English Name",
+            CreatedAt = Stamp,
+            UpdatedAt = Stamp,
+        };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
         await db.SaveChangesAsync();
@@ -71,15 +77,11 @@ public class CorpusBuilderTests
     public async Task Tags_ov_3d_and_open_air_and_groups_by_cinema()
     {
         using var db = NewDb();
-        var arena = Cinema("arena", "Arena Estiva");
-        arena.OpenAir = true;
-        db.Cinemas.AddRange(arena, Cinema("indoor", "Sala Chiusa"));
+        db.Cinemas.AddRange(Cinema("arena", "Arena Estiva", openAir: true), Cinema("indoor", "Sala Chiusa"));
         db.Movies.Add(Movie(1, "Film"));
-        var s1 = Screening(1, 1, "arena", Future);
-        s1.IsOV = true;
-        var s2 = Screening(2, 1, "indoor", Future);
-        s2.Is3D = true;
-        db.Screenings.AddRange(s1, s2);
+        db.Screenings.AddRange(
+            Screening(1, 1, "arena", Future, isOV: true),
+            Screening(2, 1, "indoor", Future, is3D: true));
         await db.SaveChangesAsync();
 
         var corpus = await BuildAsync(db);
@@ -95,12 +97,18 @@ public class CorpusBuilderTests
     {
         using var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
-        var m = Movie(1, "Film");
-        m.ImdbRating = "8.1";
-        m.RtRating = "92%";
-        m.MetacriticScore = "75";
-        m.Awards = "Won 2 Oscars. 126 wins & 375 nominations total";
-        m.TmdbKeywords = "[" + string.Join(",", Enumerable.Range(1, 15).Select(i => $"{{\"name\":\"k{i}\"}}")) + "]";
+        var m = new Movie
+        {
+            Id = 1,
+            Title = "Film",
+            ImdbRating = "8.1",
+            RtRating = "92%",
+            MetacriticScore = "75",
+            Awards = "Won 2 Oscars. 126 wins & 375 nominations total",
+            TmdbKeywords = "[" + string.Join(",", Enumerable.Range(1, 15).Select(i => $"{{\"name\":\"k{i}\"}}")) + "]",
+            CreatedAt = Stamp,
+            UpdatedAt = Stamp,
+        };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
         await db.SaveChangesAsync();
@@ -118,9 +126,15 @@ public class CorpusBuilderTests
     {
         using var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
-        var m = Movie(1, "Film");
-        m.TmdbProductionCountries = "[{\"iso_3166_1\":\"IT\",\"name\":\"Italy\"}]";
-        m.TmdbCollection = "{\"id\":10,\"name\":\"Saga Collection\"}";
+        var m = new Movie
+        {
+            Id = 1,
+            Title = "Film",
+            TmdbProductionCountries = "[{\"iso_3166_1\":\"IT\",\"name\":\"Italy\"}]",
+            TmdbCollection = "{\"id\":10,\"name\":\"Saga Collection\"}",
+            CreatedAt = Stamp,
+            UpdatedAt = Stamp,
+        };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
         await db.SaveChangesAsync();
@@ -136,9 +150,15 @@ public class CorpusBuilderTests
     {
         using var db = NewDb();
         db.Cinemas.Add(Cinema("c", "Cine"));
-        var m = Movie(1, "Film");
-        m.TmdbKeywords = "not json";
-        m.TmdbCollection = "{bad}";
+        var m = new Movie
+        {
+            Id = 1,
+            Title = "Film",
+            TmdbKeywords = "not json",
+            TmdbCollection = "{bad}",
+            CreatedAt = Stamp,
+            UpdatedAt = Stamp,
+        };
         db.Movies.Add(m);
         db.Screenings.Add(Screening(1, 1, "c", Future));
         await db.SaveChangesAsync();
@@ -174,9 +194,7 @@ public class CorpusBuilderTests
     public async Task Covers_only_the_cinemas_of_its_city()
     {
         using var db = NewDb();
-        var milanCinema = Cinema("milano-1", "Cinema Milanese");
-        milanCinema.CityId = Milan;
-        db.Cinemas.AddRange(Cinema("c", "Cine Romano"), milanCinema);
+        db.Cinemas.AddRange(Cinema("c", "Cine Romano"), Cinema("milano-1", "Cinema Milanese", cityId: Milan));
         db.Movies.AddRange(Movie(1, "In Rome"), Movie(2, "Only In Milan"));
         db.Screenings.AddRange(
             Screening(1, 1, "c", Future),
@@ -206,33 +224,39 @@ public class CorpusBuilderTests
         Assert.Contains("Totale: 0 film", corpus);
     }
 
+    private const string Stamp = "2026-01-01T00:00:00Z";
+
     private static Movie Movie(int id, string title) => new()
     {
         Id = id,
         Title = title,
-        CreatedAt = "2026-01-01T00:00:00Z",
-        UpdatedAt = "2026-01-01T00:00:00Z",
+        CreatedAt = Stamp,
+        UpdatedAt = Stamp,
     };
 
-    private static Cinema Cinema(string id, string name) => new()
+    private static Cinema Cinema(string id, string name, bool openAir = false, string cityId = City.RomeId) => new()
     {
         Id = id,
         Name = name,
-        CityId = City.RomeId,
+        OpenAir = openAir,
+        CityId = cityId,
         Country = "IT",
         Website = $"https://{id}.example.com",
         ScheduleUrl = $"https://{id}.example.com/s",
-        CreatedAt = "2026-01-01T00:00:00Z",
-        UpdatedAt = "2026-01-01T00:00:00Z",
+        CreatedAt = Stamp,
+        UpdatedAt = Stamp,
     };
 
-    private static Screening Screening(int id, int movieId, string cinemaId, string datetime) => new()
+    private static Screening Screening(
+        int id, int movieId, string cinemaId, string datetime, bool isOV = false, bool is3D = false) => new()
     {
         Id = id,
         MovieId = movieId,
         CinemaId = cinemaId,
         Datetime = datetime,
-        CreatedAt = "2026-01-01T00:00:00Z",
-        UpdatedAt = "2026-01-01T00:00:00Z",
+        IsOV = isOV,
+        Is3D = is3D,
+        CreatedAt = Stamp,
+        UpdatedAt = Stamp,
     };
 }

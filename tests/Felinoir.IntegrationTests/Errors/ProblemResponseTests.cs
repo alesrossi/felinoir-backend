@@ -79,11 +79,12 @@ public class ProblemResponseTests(ProblemResponseTests.Factory factory) : IClass
     [Fact]
     public async Task A_response_with_its_own_body_is_left_alone()
     {
-        var res = await _client.GetAsync("/movies/abc");
+        // An endpoint that still writes its own { "error": ... } body (Felix, until step 6).
+        var res = await _client.PostAsJsonAsync("/felix/chat", new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
         Assert.Equal("application/json", res.Content.Headers.ContentType?.MediaType);
-        Assert.Equal("""{"error":"Invalid id"}""", await res.Content.ReadAsStringAsync());
+        Assert.Equal("""{"error":"Richiesta non valida."}""", await res.Content.ReadAsStringAsync());
     }
 
     private static string Single(HttpResponseMessage res, string header) =>

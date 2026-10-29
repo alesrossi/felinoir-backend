@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Felinoir.Domain.Entities;
 
 /// <summary>
@@ -12,13 +10,12 @@ public class City
     /// <summary>Today the only city; every cinema is listed under it.</summary>
     public const string RomeId = "rome";
 
-    public string Id { get; set; } = default!;
-    public string Name { get; set; } = default!;
+    public string Id { get; init; } = default!;
+    public string Name { get; init; } = default!;
 
     /// <summary>ISO 8601 UTC timestamp stored as TEXT (never TIMESTAMPTZ).</summary>
-    public string CreatedAt { get; set; } = default!;
-    public string UpdatedAt { get; set; } = default!;
+    public string CreatedAt { get; init; } = default!;
+    public string UpdatedAt { get; init; } = default!;
 
-    [JsonIgnore]
-    public ICollection<Cinema> Cinemas { get; set; } = new List<Cinema>();
+    public ICollection<Cinema> Cinemas { get; init; } = new List<Cinema>();
 }

@@ -44,107 +44,116 @@ internal static class ContractData
         TestData.Movie(NotShowing, title: "Fuori programmazione", slug: "fuori-programmazione",
             createdAt: "2026-01-15T09:00:00Z"),
 
-        Screening(EveningScreening, Dune, Adriano, "2099-06-01T21:00:00", s =>
+        new Screening
         {
-            s.Hall = "Sala 1";
-            s.IsOV = true;
-            s.SubtitleLanguage = "it";
-            s.BookingUrl = "https://www.nvrcinema.it/adriano/book/1";
-            s.Meta = """{"price":"8.50","source":"nvr"}""";
-        }),
-        Screening(OpenAirScreening, Dune, SanCosimato, "2099-06-02T21:30:00", s => s.Is3D = true),
-        Screening(VelletriScreening, Shorts, Augustus, "2099-06-03T18:00:00"),
-        Screening(MorningScreening, Chimera, Adriano, "2099-06-01T09:00:00"),
-        Screening(OldScreening, Dune, Adriano, "2020-01-01T20:00:00"),
+            Id = EveningScreening, MovieId = Dune, CinemaId = Adriano, Datetime = "2099-06-01T21:00:00",
+            Hall = "Sala 1",
+            IsOV = true,
+            SubtitleLanguage = "it",
+            BookingUrl = "https://www.nvrcinema.it/adriano/book/1",
+            Meta = """{"price":"8.50","source":"nvr"}""",
+            CreatedAt = TestData.Created, UpdatedAt = TestData.Created,
+        },
+        new Screening
+        {
+            Id = OpenAirScreening, MovieId = Dune, CinemaId = SanCosimato, Datetime = "2099-06-02T21:30:00",
+            Is3D = true,
+            CreatedAt = TestData.Created, UpdatedAt = TestData.Created,
+        },
+        TestData.Screening(VelletriScreening, Shorts, Augustus, "2099-06-03T18:00:00"),
+        TestData.Screening(MorningScreening, Chimera, Adriano, "2099-06-01T09:00:00"),
+        TestData.Screening(OldScreening, Dune, Adriano, "2020-01-01T20:00:00"),
     ];
 
     private static Cinema Cinema(
-        string id, string name, string? chain = null, string? address = null, bool openAir = false)
+        string id, string name, string? chain = null, string? address = null, bool openAir = false) => new()
     {
-        var cinema = TestData.Cinema(id, name: name);
-        cinema.Chain = chain;
-        cinema.Address = address;
-        cinema.OpenAir = openAir;
-        return cinema;
-    }
-
-    private static Screening Screening(
-        int id, int movieId, string cinemaId, string datetime, Action<Screening>? configure = null)
-    {
-        var screening = TestData.Screening(id, movieId, cinemaId, datetime);
-        configure?.Invoke(screening);
-        return screening;
-    }
+        Id = id,
+        Name = name,
+        Chain = chain,
+        Address = address,
+        OpenAir = openAir,
+        CityId = City.RomeId,
+        Country = "IT",
+        Website = $"https://{id}.example.com",
+        ScheduleUrl = $"https://{id}.example.com/schedule",
+        CreatedAt = TestData.Created,
+        UpdatedAt = TestData.Created,
+    };
 
     /// <summary>Every column filled, including the TMDB JSON blobs.</summary>
-    private static Movie DuneMovie()
+    private static Movie DuneMovie() => new()
     {
-        var m = TestData.Movie(Dune, title: "Dune - Parte due", slug: "dune-parte-due",
-            createdAt: "2026-03-01T09:00:00Z");
-        m.OriginalTitle = "Dune: Part Two";
-        m.Director = "Denis Villeneuve";
-        m.DurationMinutes = 166;
-        m.Genres = "Fantascienza, Avventura";
-        m.Synopsis = "Paul Atreides si unisce ai Fremen.";
-        m.PosterUrl = "https://scraped.example/dune.jpg";
-        m.TrailerUrl = "https://scraped.example/dune-trailer";
-        m.ExternalId = "nvr-123";
-        m.Rating = "T";
-        m.TmdbId = 693134;
-        m.ImdbId = "tt15239678";
-        m.TmdbRating = "8.1";
-        m.TmdbVotes = "6500";
-        m.TmdbTitle = "Dune - Parte due";
-        m.TmdbTitleEn = "Dune: Part Two";
-        m.TmdbOriginalTitle = "Dune: Part Two";
-        m.TmdbPlot = "Paul Atreides si unisce a Chani e ai Fremen.";
-        m.TmdbPlotEn = "Paul Atreides unites with Chani and the Fremen.";
-        m.TmdbGenre = "Fantascienza";
-        m.TmdbGenreEn = "Science Fiction";
-        m.TmdbLanguage = "en";
-        m.TmdbCountry = "US";
-        m.TmdbPosterUrl = "https://image.tmdb.org/t/p/w500/dune.jpg";
-        m.TmdbTrailerUrlIt = "https://youtube.com/watch?v=it";
-        m.TmdbTrailerUrlEn = "https://youtube.com/watch?v=en";
-        m.TmdbPopularity = "512.3";
-        m.TmdbStatus = "Released";
-        m.TmdbTagline = "Long live the fighters.";
-        m.TmdbBudget = 190_000_000;
-        m.TmdbRevenue = 714_444_358;
-        m.TmdbHomepage = "https://dune.example";
-        m.TmdbCollection = """{"id":726871,"name":"Dune Collection"}""";
-        m.TmdbProductionCompanies = """[{"id":923,"name":"Legendary Pictures"}]""";
-        m.TmdbProductionCountries = """[{"iso_3166_1":"US","name":"United States of America"}]""";
-        m.TmdbSpokenLanguages = """[{"iso_639_1":"en","name":"English"}]""";
-        m.TmdbBackdrops = """["https://image.tmdb.org/t/p/w1280/b1.jpg"]""";
-        m.TmdbVideos = """[{"key":"abc","site":"YouTube"}]""";
-        m.TmdbKeywords = """["desert","prophecy","sandworm"]""";
-        m.TmdbRecommendations = """[{"id":438631,"title":"Dune"}]""";
-        m.TmdbWatchProviders = """{"IT":{"flatrate":["Netflix"]}}""";
-        m.TmdbCredits = """{"cast":[{"name":"Timothée Chalamet","character":"Paul Atreides"}],"crew":[{"name":"Denis Villeneuve","job":"Director"}]}""";
-        m.TmdbEnrichedAt = "2026-03-02T03:00:00Z";
-        m.ContentRating = "PG-13";
-        m.Writer = "Denis Villeneuve, Jon Spaihts";
-        m.Actors = "Timothée Chalamet, Zendaya";
-        m.Released = "2024-02-28";
-        m.ImdbRating = "8.5";
-        m.ImdbVotes = "620,000";
-        m.RtRating = "92%";
-        m.MetacriticScore = "79";
-        m.Awards = "Won 2 Oscars.";
-        m.OmdbEnrichedAt = "2026-03-02T04:00:00Z";
-        return m;
-    }
+        Id = Dune,
+        Title = "Dune - Parte due",
+        Slug = "dune-parte-due",
+        CreatedAt = "2026-03-01T09:00:00Z",
+        UpdatedAt = "2026-03-01T09:00:00Z",
+        OriginalTitle = "Dune: Part Two",
+        Director = "Denis Villeneuve",
+        DurationMinutes = 166,
+        Genres = "Fantascienza, Avventura",
+        Synopsis = "Paul Atreides si unisce ai Fremen.",
+        PosterUrl = "https://scraped.example/dune.jpg",
+        TrailerUrl = "https://scraped.example/dune-trailer",
+        ExternalId = "nvr-123",
+        Rating = "T",
+        TmdbId = 693134,
+        ImdbId = "tt15239678",
+        TmdbRating = "8.1",
+        TmdbVotes = "6500",
+        TmdbTitle = "Dune - Parte due",
+        TmdbTitleEn = "Dune: Part Two",
+        TmdbOriginalTitle = "Dune: Part Two",
+        TmdbPlot = "Paul Atreides si unisce a Chani e ai Fremen.",
+        TmdbPlotEn = "Paul Atreides unites with Chani and the Fremen.",
+        TmdbGenre = "Fantascienza",
+        TmdbGenreEn = "Science Fiction",
+        TmdbLanguage = "en",
+        TmdbCountry = "US",
+        TmdbPosterUrl = "https://image.tmdb.org/t/p/w500/dune.jpg",
+        TmdbTrailerUrlIt = "https://youtube.com/watch?v=it",
+        TmdbTrailerUrlEn = "https://youtube.com/watch?v=en",
+        TmdbPopularity = "512.3",
+        TmdbStatus = "Released",
+        TmdbTagline = "Long live the fighters.",
+        TmdbBudget = 190_000_000,
+        TmdbRevenue = 714_444_358,
+        TmdbHomepage = "https://dune.example",
+        TmdbCollection = """{"id":726871,"name":"Dune Collection"}""",
+        TmdbProductionCompanies = """[{"id":923,"name":"Legendary Pictures"}]""",
+        TmdbProductionCountries = """[{"iso_3166_1":"US","name":"United States of America"}]""",
+        TmdbSpokenLanguages = """[{"iso_639_1":"en","name":"English"}]""",
+        TmdbBackdrops = """["https://image.tmdb.org/t/p/w1280/b1.jpg"]""",
+        TmdbVideos = """[{"key":"abc","site":"YouTube"}]""",
+        TmdbKeywords = """["desert","prophecy","sandworm"]""",
+        TmdbRecommendations = """[{"id":438631,"title":"Dune"}]""",
+        TmdbWatchProviders = """{"IT":{"flatrate":["Netflix"]}}""",
+        TmdbCredits = """{"cast":[{"name":"Timothée Chalamet","character":"Paul Atreides"}],"crew":[{"name":"Denis Villeneuve","job":"Director"}]}""",
+        TmdbEnrichedAt = "2026-03-02T03:00:00Z",
+        ContentRating = "PG-13",
+        Writer = "Denis Villeneuve, Jon Spaihts",
+        Actors = "Timothée Chalamet, Zendaya",
+        Released = "2024-02-28",
+        ImdbRating = "8.5",
+        ImdbVotes = "620,000",
+        RtRating = "92%",
+        MetacriticScore = "79",
+        Awards = "Won 2 Oscars.",
+        OmdbEnrichedAt = "2026-03-02T04:00:00Z",
+    };
 
     /// <summary>Same creation time as Dune (tests the id tie-break); RT rating only; no TMDB title.</summary>
-    private static Movie ChimeraMovie()
+    private static Movie ChimeraMovie() => new()
     {
-        var m = TestData.Movie(Chimera, title: "La chimera", slug: "la-chimera",
-            createdAt: "2026-03-01T09:00:00Z");
-        m.Director = "Alice Rohrwacher";
-        m.DurationMinutes = 130;
-        m.RtRating = "97%";
-        m.TmdbKeywords = """["etruscans","tomb raiders"]""";
-        return m;
-    }
+        Id = Chimera,
+        Title = "La chimera",
+        Slug = "la-chimera",
+        CreatedAt = "2026-03-01T09:00:00Z",
+        UpdatedAt = "2026-03-01T09:00:00Z",
+        Director = "Alice Rohrwacher",
+        DurationMinutes = 130,
+        RtRating = "97%",
+        TmdbKeywords = """["etruscans","tomb raiders"]""",
+    };
 }

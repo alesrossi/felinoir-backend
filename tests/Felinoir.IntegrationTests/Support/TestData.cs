@@ -5,6 +5,9 @@ namespace Felinoir.IntegrationTests.Support;
 /// <summary>Factory helpers for valid entities used across the service tests.</summary>
 internal static class TestData
 {
+    /// <summary>The created/updated stamp of seeded rows.</summary>
+    public const string Created = "2026-01-01T00:00:00Z";
+
     /// <remarks>
     /// The default title is unique per id: the scrapers' dedup index (idx_movies_unique) rejects
     /// two movies with the same title and original title, exactly as production does.
@@ -24,7 +27,8 @@ internal static class TestData
         };
 
     /// <summary>A city other than Rome, which tests add themselves (only Rome is seeded).</summary>
-    public static City City(string id, string name) => new() { Id = id, Name = name };
+    public static City City(string id, string name) =>
+        new() { Id = id, Name = name, CreatedAt = Created, UpdatedAt = Created };
 
     public static Cinema Cinema(
         string id,

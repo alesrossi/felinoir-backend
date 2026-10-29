@@ -1,86 +1,84 @@
-using System.Text.Json.Serialization;
-
 namespace Felinoir.Domain.Entities;
 
 /// <summary>
-/// A film. Scraped core fields plus TMDB and OMDb enrichment columns.
+/// A film: scraped core fields plus TMDB and OMDb enrichment columns. Written by the scrapers;
+/// this server only reads it, so it is init-only.
 /// JSON blob fields (tmdb*) are stored and returned as raw JSON strings, never deserialized.
 /// All timestamps are ISO 8601 UTC stored as TEXT.
 /// </summary>
 public class Movie
 {
-    public int Id { get; set; }
-    public string Title { get; set; } = default!;
-    public string? OriginalTitle { get; set; }
-    public string? Director { get; set; }
-    public int? DurationMinutes { get; set; }
-    public string? Genres { get; set; }
-    public string? Synopsis { get; set; }
-    public string? PosterUrl { get; set; }
-    public string? TrailerUrl { get; set; }
-    public string? ExternalId { get; set; }
-    public string? Rating { get; set; }
-    public string? Slug { get; set; }
+    public int Id { get; init; }
+    public string Title { get; init; } = default!;
+    public string? OriginalTitle { get; init; }
+    public string? Director { get; init; }
+    public int? DurationMinutes { get; init; }
+    public string? Genres { get; init; }
+    public string? Synopsis { get; init; }
+    public string? PosterUrl { get; init; }
+    public string? TrailerUrl { get; init; }
+    public string? ExternalId { get; init; }
+    public string? Rating { get; init; }
+    public string? Slug { get; init; }
 
     // TMDB enrichment
-    public int? TmdbId { get; set; }
-    public string? ImdbId { get; set; }
-    public string? TmdbRating { get; set; }
-    public string? TmdbVotes { get; set; }
-    public string? TmdbTitle { get; set; }
-    public string? TmdbTitleEn { get; set; }
-    public string? TmdbOriginalTitle { get; set; }
-    public string? TmdbPlot { get; set; }
-    public string? TmdbPlotEn { get; set; }
-    public string? TmdbGenre { get; set; }
-    public string? TmdbGenreEn { get; set; }
-    public string? TmdbLanguage { get; set; }
-    public string? TmdbCountry { get; set; }
-    public string? TmdbPosterUrl { get; set; }
-    public string? TmdbTrailerUrlIt { get; set; }
-    public string? TmdbTrailerUrlEn { get; set; }
-    public string? TmdbPopularity { get; set; }
-    public string? TmdbStatus { get; set; }
-    public string? TmdbTagline { get; set; }
-    public long? TmdbBudget { get; set; }
-    public long? TmdbRevenue { get; set; }
-    public string? TmdbHomepage { get; set; }
-    public string? TmdbCollection { get; set; }
-    public string? TmdbProductionCompanies { get; set; }
-    public string? TmdbProductionCountries { get; set; }
-    public string? TmdbSpokenLanguages { get; set; }
-    public string? TmdbBackdrops { get; set; }
-    public string? TmdbVideos { get; set; }
-    public string? TmdbKeywords { get; set; }
-    public string? TmdbRecommendations { get; set; }
-    public string? TmdbWatchProviders { get; set; }
+    public int? TmdbId { get; init; }
+    public string? ImdbId { get; init; }
+    public string? TmdbRating { get; init; }
+    public string? TmdbVotes { get; init; }
+    public string? TmdbTitle { get; init; }
+    public string? TmdbTitleEn { get; init; }
+    public string? TmdbOriginalTitle { get; init; }
+    public string? TmdbPlot { get; init; }
+    public string? TmdbPlotEn { get; init; }
+    public string? TmdbGenre { get; init; }
+    public string? TmdbGenreEn { get; init; }
+    public string? TmdbLanguage { get; init; }
+    public string? TmdbCountry { get; init; }
+    public string? TmdbPosterUrl { get; init; }
+    public string? TmdbTrailerUrlIt { get; init; }
+    public string? TmdbTrailerUrlEn { get; init; }
+    public string? TmdbPopularity { get; init; }
+    public string? TmdbStatus { get; init; }
+    public string? TmdbTagline { get; init; }
+    public long? TmdbBudget { get; init; }
+    public long? TmdbRevenue { get; init; }
+    public string? TmdbHomepage { get; init; }
+    public string? TmdbCollection { get; init; }
+    public string? TmdbProductionCompanies { get; init; }
+    public string? TmdbProductionCountries { get; init; }
+    public string? TmdbSpokenLanguages { get; init; }
+    public string? TmdbBackdrops { get; init; }
+    public string? TmdbVideos { get; init; }
+    public string? TmdbKeywords { get; init; }
+    public string? TmdbRecommendations { get; init; }
+    public string? TmdbWatchProviders { get; init; }
 
     /// <summary>
     /// Trimmed TMDB credits as raw JSON: <c>{ directors, writers, cast, composers, cinematographers }</c>,
     /// each person <c>{ id, name, profile_path }</c> (writers add <c>jobs</c>, cast adds <c>character</c>).
     /// Written by the scraper's TMDB enrichment.
     /// </summary>
-    public string? TmdbCredits { get; set; }
-    public string? TmdbEnrichedAt { get; set; }
+    public string? TmdbCredits { get; init; }
+    public string? TmdbEnrichedAt { get; init; }
 
-    public string? ContentRating { get; set; }
-    public string? Writer { get; set; }
-    public string? Actors { get; set; }
-    public string? Released { get; set; }
+    public string? ContentRating { get; init; }
+    public string? Writer { get; init; }
+    public string? Actors { get; init; }
+    public string? Released { get; init; }
 
     // OMDb enrichment
-    public string? ImdbRating { get; set; }
-    public string? ImdbVotes { get; set; }
-    public string? RtRating { get; set; }
-    public string? MetacriticScore { get; set; }
+    public string? ImdbRating { get; init; }
+    public string? ImdbVotes { get; init; }
+    public string? RtRating { get; init; }
+    public string? MetacriticScore { get; init; }
 
     /// <summary>OMDb's awards line as given, e.g. "Won 2 Oscars. 126 wins &amp; 375 nominations total".</summary>
-    public string? Awards { get; set; }
-    public string? OmdbEnrichedAt { get; set; }
+    public string? Awards { get; init; }
+    public string? OmdbEnrichedAt { get; init; }
 
-    public string CreatedAt { get; set; } = default!;
-    public string UpdatedAt { get; set; } = default!;
+    public string CreatedAt { get; init; } = default!;
+    public string UpdatedAt { get; init; } = default!;
 
-    [JsonIgnore]
-    public ICollection<Screening> Screenings { get; set; } = new List<Screening>();
+    public ICollection<Screening> Screenings { get; init; } = new List<Screening>();
 }

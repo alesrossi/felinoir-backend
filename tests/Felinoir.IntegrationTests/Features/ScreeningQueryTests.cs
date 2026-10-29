@@ -1,14 +1,23 @@
-using Felinoir.Application.Screenings;
+using Felinoir.Application.Common;
+using Felinoir.Application.Features.Screenings;
 using Felinoir.IntegrationTests.Support;
 
-namespace Felinoir.IntegrationTests.Services;
+namespace Felinoir.IntegrationTests.Features;
 
 [Collection(PostgresCollection.Name)]
-public class ScreeningServiceTests : PostgresTestBase
+/// <summary>The screening query handler against real Postgres.</summary>
+public class ScreeningQueryTests : PostgresTestBase
 {
-    public ScreeningServiceTests(PostgresFixture fixture) : base(fixture) { }
+    public ScreeningQueryTests(PostgresFixture fixture) : base(fixture) { }
 
-    private ScreeningService NewService() => new(Fixture.NewDbContext());
+    private static readonly PageRequest DefaultPage =
+        PageRequest.Create(null, null, GetScreeningsHandler.DefaultLimit, GetScreeningsHandler.MaxLimit);
+
+    private async Task<IReadOnlyList<ScreeningResponse>> Get(GetScreeningsQuery query)
+    {
+        await using var db = Fixture.NewDbContext();
+        return await new GetScreeningsHandler(db).Handle(query, default);
+    }
 
     /// <summary>
     /// Two cinemas in different cities and two movies, with a handful of screenings at Italian
@@ -35,7 +44,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery());
+        var result = await Get(new GetScreeningsQuery(DefaultPage));
 
         Assert.Equal(new[] { 1, 2, 3, 4 }, result.Select(s => s.Id));
     }
@@ -45,7 +54,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { CinemaId = "milano-1" });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { CinemaId = "milano-1" });
 
         Assert.Equal(new[] { 3, 4 }, result.Select(s => s.Id));
     }
@@ -55,7 +64,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { MovieId = 10 });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { MovieId = 10 });
 
         Assert.Equal(new[] { 1, 3 }, result.Select(s => s.Id));
     }
@@ -69,7 +78,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { City = city });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { City = city });
 
         Assert.Equal(new[] { 3, 4 }, result.Select(s => s.Id));
     }
@@ -79,7 +88,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        Assert.Empty(await NewService().GetAsync(new ScreeningQuery { City = "Torino" }));
+        Assert.Empty(await Get(new GetScreeningsQuery(DefaultPage) { City = "Torino" }));
     }
 
     [Fact]
@@ -88,7 +97,7 @@ public class ScreeningServiceTests : PostgresTestBase
         await SeedGraphAsync();
 
         // 16:00 UTC is 18:00 in Rome (CEST): screening 2 starts exactly then.
-        var result = await NewService().GetAsync(new ScreeningQuery { From = "2026-06-23T16:00:00Z" });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { From = "2026-06-23T16:00:00Z" });
 
         Assert.Equal(new[] { 2, 3, 4 }, result.Select(s => s.Id));
     }
@@ -99,7 +108,7 @@ public class ScreeningServiceTests : PostgresTestBase
         await SeedGraphAsync();
 
         // From exactly matches screening 2's datetime — it must be included.
-        var result = await NewService().GetAsync(new ScreeningQuery { From = "2026-06-23T18:00:00" });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { From = "2026-06-23T18:00:00" });
 
         Assert.Equal(new[] { 2, 3, 4 }, result.Select(s => s.Id));
     }
@@ -109,7 +118,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { To = "2026-06-24T21:00:00" });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { To = "2026-06-24T21:00:00" });
 
         Assert.Equal(new[] { 1, 2, 3 }, result.Select(s => s.Id));
     }
@@ -119,7 +128,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery
+        var result = await Get(new GetScreeningsQuery(DefaultPage)
         {
             From = "2026-06-23T00:00:00",
             To = "2026-06-24T23:59:59",
@@ -133,7 +142,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery
+        var result = await Get(new GetScreeningsQuery(DefaultPage)
         {
             City = "Roma",
             MovieId = 20,
@@ -147,7 +156,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { WithRelations = false });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { WithRelations = false });
 
         Assert.All(result, s =>
         {
@@ -161,7 +170,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { WithRelations = true });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { WithRelations = true });
 
         Assert.All(result, s =>
         {
@@ -170,7 +179,7 @@ public class ScreeningServiceTests : PostgresTestBase
         });
         var first = result.First(s => s.Id == 1);
         Assert.Equal("Movie A", first.Movie!.Title);
-        Assert.Equal("Roma", first.Cinema!.CityName);
+        Assert.Equal("Roma", first.Cinema!.City);
     }
 
     [Fact]
@@ -179,7 +188,7 @@ public class ScreeningServiceTests : PostgresTestBase
         await SeedGraphAsync();
 
         // Ordered [1,2,3,4]; skip 1, take 2 => [2,3].
-        var result = await NewService().GetAsync(new ScreeningQuery { Offset = 1, Limit = 2 });
+        var result = await Get(new GetScreeningsQuery(PageRequest.Create(2, 1, GetScreeningsHandler.DefaultLimit, GetScreeningsHandler.MaxLimit)));
 
         Assert.Equal(new[] { 2, 3 }, result.Select(s => s.Id));
     }
@@ -189,7 +198,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { CinemaId = "nonexistent" });
+        var result = await Get(new GetScreeningsQuery(DefaultPage) { CinemaId = "nonexistent" });
 
         Assert.Empty(result);
     }

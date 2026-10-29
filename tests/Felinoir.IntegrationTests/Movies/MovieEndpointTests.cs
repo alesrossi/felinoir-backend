@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Felinoir.Domain.Entities;
 using Felinoir.IntegrationTests.Support;
 
 namespace Felinoir.IntegrationTests.Movies;
@@ -27,11 +28,18 @@ public class MovieEndpointTests : PostgresTestBase, IAsyncLifetime
     {
         await base.InitializeAsync();
 
-        var movie = TestData.Movie(42, title: "Dune - Parte due", slug: "dune-parte-due");
-        movie.Awards = "Won 2 Oscars. 126 wins & 375 nominations total";
-        movie.TmdbCredits = Credits;
-        movie.TmdbBudget = 190_000_000;
-        movie.TmdbRevenue = 714_444_358;
+        var movie = new Movie
+        {
+            Id = 42,
+            Title = "Dune - Parte due",
+            Slug = "dune-parte-due",
+            Awards = "Won 2 Oscars. 126 wins & 375 nominations total",
+            TmdbCredits = Credits,
+            TmdbBudget = 190_000_000,
+            TmdbRevenue = 714_444_358,
+            CreatedAt = TestData.Created,
+            UpdatedAt = TestData.Created,
+        };
         await SeedAsync(movie, TestData.Movie(43, title: "Senza dati", slug: "senza-dati"));
     }
 

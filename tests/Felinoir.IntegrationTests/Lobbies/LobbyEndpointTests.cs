@@ -32,12 +32,19 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
     {
         await base.InitializeAsync();
 
-        var future = TestData.Screening(ScreeningId, 42, "nuovo-sacher", _startsAt);
-        future.IsOV = true;
-        future.BookingUrl = "https://sacher/book";
+        var future = new Screening
+        {
+            Id = ScreeningId, MovieId = 42, CinemaId = "nuovo-sacher", Datetime = _startsAt,
+            IsOV = true,
+            BookingUrl = "https://sacher/book",
+            CreatedAt = TestData.Created, UpdatedAt = TestData.Created,
+        };
 
-        var movie = TestData.Movie(42, title: "Dune - Parte due", slug: "dune-parte-due");
-        movie.TmdbTitleEn = "Dune: Part Two";
+        var movie = new Movie
+        {
+            Id = 42, Title = "Dune - Parte due", Slug = "dune-parte-due", TmdbTitleEn = "Dune: Part Two",
+            CreatedAt = TestData.Created, UpdatedAt = TestData.Created,
+        };
 
         await SeedAsync(
             movie,
