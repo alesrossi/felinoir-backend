@@ -69,4 +69,12 @@ public class DatabaseUrlTests
     {
         Assert.Throws<ArgumentException>(() => DatabaseUrl.ToNpgsqlConnectionString(value));
     }
+
+    [Fact]
+    public void A_uri_turns_off_kerberos_encryption()
+    {
+        var b = new NpgsqlConnectionStringBuilder(DatabaseUrl.ToNpgsqlConnectionString("postgres://u:p@db:5432/cinema"));
+
+        Assert.Equal(GssEncryptionMode.Disable, b.GssEncryptionMode);
+    }
 }

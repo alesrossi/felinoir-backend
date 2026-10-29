@@ -15,6 +15,8 @@ DotNetEnv.Env.NoClobber().TraversePath().Load();
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddPersistence(builder.Configuration);
+// The migrator's own lines are what matter; EF's SQL logging would bury them.
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
 
 using var host = builder.Build();
 var logger = host.Services.GetRequiredService<ILogger<Program>>();

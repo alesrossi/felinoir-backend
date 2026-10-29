@@ -8,7 +8,8 @@ namespace Felinoir.Infrastructure.Configuration;
 /// <para>
 /// Accepts URI form (<c>postgres://user:pass@host:5432/db?sslmode=require</c>,
 /// as used by the original Node backend and most managed Postgres providers)
-/// and passes already-keyword strings (<c>Host=...;Username=...</c>) through unchanged.
+/// and passes already-keyword strings (<c>Host=...;Username=...</c>) through unchanged. The URI
+/// form also turns off Kerberos (GSS) encryption, which nothing here uses.
 /// </para>
 /// </summary>
 public static class DatabaseUrl
@@ -29,6 +30,10 @@ public static class DatabaseUrl
             Host = uri.Host,
             Port = uri.Port > 0 ? uri.Port : 5432,
             Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/')),
+            // Npgsql tries Kerberos (GSS) encryption by default, and the slim .NET images don't
+            // ship libgssapi, so every connection logged "Cannot load library libgssapi_krb5".
+            // Nothing here uses Kerberos.
+            GssEncryptionMode = GssEncryptionMode.Disable,
         };
 
         var userInfo = uri.UserInfo.Split(':', 2);
