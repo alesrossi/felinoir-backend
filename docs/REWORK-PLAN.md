@@ -99,38 +99,51 @@ every name. So the history was squashed instead:
   `.env` (it used to be overridden, which sent a migrator run meant for a scratch database to the
   local one).
 
-## Step 2 — Cities and cinema facts
+## Step 2 — Cities and cinema facts — done 2026-10-29
 
 Done in the **current** architecture with minimal code, so the schema is final before the
-refactor starts.
+refactor starts. Multi-city support is in place under the hood; Rome is the only city.
 
-- **`cities` table:** `id` (slug, e.g. `rome`), `name` (`Roma`), `created_at`, `updated_at`,
-  and optionally a centre lat/lng. Seeded with `rome` by the migration. New cities are always
-  added by backend migrations (they are reference data).
-- **`cinemas`:**
-  - add `city_id` (NOT NULL, FK → `cities`, existing rows backfilled to `rome`, the Velletri
-    multiplex included)
-  - add `latitude`, `longitude` and `open_air` (boolean, default false), filled from
-    `cinemas.yml` by the migration
-  - drop the free-text `city` and `idx_cinemas_city`, and add an index on `city_id`
-- **JSON stays compatible:** `Cinema.city` is still a string, now taken from `cities.name`.
-  `coordinates` and `openAir` may be added as new fields.
-- **`?city=` filter:** optional on `/screenings`, and newly on `/movies`, `/cinemas` and Felix.
-  It accepts the City id (`rome`) and, case-insensitively, the display name (`Roma`). With no
-  city, results are the same as today.
-- **`felix_cache`:** keyed by `city_id` (PK, FK → `cities`) in place of `id = 1`.
-- **`ScreeningTime`:** a value object over `screenings.datetime`, which holds **Italian local
-  time** with no offset (`yyyy-MM-ddTHH:mm:ss`), not UTC as `SPEC.md` claims. It parses strictly,
-  converts with `Europe/Rome` (the only zone, since every City is in Italy), and gives the
-  `now` used in comparisons. **This fixes a bug:** `CorpusBuilder` compares a UTC `now` with
-  local screening times, so Felix offers screenings that started up to 1–2 h ago, and
-  `?from=`/`?to=` have the same mismatch. `RomeTime` gets folded into it.
-- **The backend's `cinemas.yml` is deleted**, along with `CinemasYamlConfigProvider`,
-  `CinemasConfigLocator`, `ICinemaConfigProvider` and the YamlDotNet dependency. The corpus reads
-  `open_air` from the database. `cinemas.yml` now lives only in the scrapers repo.
-
-Done when: the drift test and the snapshots are green (snapshots updated only for the additive
-fields and the corrected time comparisons).
+- **`Cities` migration:**
+  - a `cities` table (`id` slug, `name`, `created_at`, `updated_at`) seeded with `rome` / `Roma`;
+    new cities are always added by backend migrations (reference data)
+  - `cinemas.city_id` (NOT NULL, FK → `cities`, index `idx_cinemas_city_id`), every existing
+    cinema listed under `rome`; the free-text `cinemas.city` and `idx_cinemas_city` are dropped
+    (on the dev data, ten cinemas outside the municipality, e.g. Velletri and Tivoli, are now
+    Rome cinemas; their town stays in `address`)
+  - `cinemas.latitude`, `longitude`, `open_air` (default false), filled from `cinemas.yml` for the
+    53 cinemas listed there
+  - `felix_cache` keyed by `city_id` (PK, FK → `cities`); the existing row becomes Rome's
+  - checked on a copy of the dev data in both directions; `Down()` restores `city` as the city's
+    name (`Roma`), since the original town names aren't recoverable
+- **Domain:** a `City` entity (`City.RomeId`), `Cinema.CityId` / `City` / `Latitude` / `Longitude`
+  / `OpenAir`, `FelixCache.CityId`. The API JSON is unchanged: `Cinema.city` is still a string,
+  now the city's name (`CityName`, serialised as `city`; queries returning cinemas include
+  `City`). Coordinates and `openAir` are not exposed yet.
+- **`?city=`** on `/screenings`, `/movies` (movies with a screening in that city) and `/cinemas`:
+  a city id (`rome`) or display name (`Roma`), ignoring case. Without it, results are as before;
+  an unknown city gives `[]`.
+- **Felix** builds its corpus per city (`ICorpusBuilder.BuildAsync(cityId)`: that city's cinemas,
+  screenings and name) and persists its cache per city, always Rome for now. Accepting `?city=` on
+  `/felix/chat` waits for step 6: today's process-wide `FelixState` can only serve one city.
+- **`ScreeningTime`** (Domain value object): Italian wall-clock time, `Europe/Rome`.
+  - Parses the stored forms strictly: `yyyy-MM-ddTHH:mm:ss`, and `yyyy-MM-ddTHH:mm`, which
+    the Troisi scraper writes (73 of 3978 dev rows). Stored values are not rewritten: the
+    scrapers upsert on the exact text, so normalising them would create duplicates until that
+    scraper is fixed.
+  - Replaces `RomeTime`; `UtcText` formats the UTC timestamps.
+  - **Fixes the corpus bug:** "now" was UTC and compared with Italian times, so Felix offered
+    screenings that had started up to 2 h earlier. The corpus now uses the injected
+    `TimeProvider` in Italian time.
+  - **`?from=` / `?to=`** with `Z` or an offset are converted to Italian time; values without
+    one are Italian time, as stored; unparseable values are compared as given, as before.
+  - Still a plain `string` on the entity: mapping `Screening.Datetime` to `ScreeningTime` with an
+    EF value converter moves to step 4, when entities stop being serialised directly.
+- **The backend's `cinemas.yml` is deleted**, with `CinemasYamlConfigProvider`,
+  `CinemasConfigLocator`, `ICinemaConfigProvider` and YamlDotNet; the corpus reads `open_air` from
+  the database. `cinemas.yml` now lives only in the scrapers repo.
+- **Not applied to the local database:** the running dev images still read and write
+  `cinemas.city`; the migrator applies `Cities` when the new stack starts.
 
 ## Step 3 — Foundations (ADR 0002)
 

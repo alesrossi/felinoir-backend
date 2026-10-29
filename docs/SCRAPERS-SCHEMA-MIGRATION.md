@@ -86,8 +86,13 @@ constant when they start using something new.
 - **`CinemaRecord` and the cinemas repository**: replace `city` with `cityId`.
   `findByCity` filters on `city_id`.
 - **Screening `datetime`** stays Italian local time `yyyy-MM-ddTHH:mm:ss` with no offset. The
-  backend now parses it strictly, so every scraper must produce exactly that format (no
-  milliseconds, no `Z`, no offset). Consider one shared formatter used by every scraper.
+  backend parses it strictly (`ScreeningTime`): no milliseconds, no `Z`, no offset. It also
+  accepts `yyyy-MM-ddTHH:mm` for now, because the **Troisi scraper writes minutes only**
+  (`2026-10-18T16:15`, 73 rows on the dev data). Fix that scraper to write seconds and, in the
+  same release, normalise its stored rows (`UPDATE screenings SET datetime = datetime || ':00'
+  WHERE datetime ~ '^\d{4}-\d\d-\d\dT\d\d:\d\d$'`, as a backend migration); doing either alone
+  makes the upsert on `(cinema_id, movie_id, datetime)` create duplicates. Consider one shared
+  formatter used by every scraper.
 - **Lobbies:** the version-bump triggers are dropped by the backend. Scrapers never wrote
   lobbies, so nothing changes, as long as the scrapers don't recreate the triggers (they won't
   once `schema.ts` is gone).
