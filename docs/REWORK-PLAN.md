@@ -164,8 +164,8 @@ As built (details below are the original plan, which held):
 - **Mediator:** registered in the Api (where its source generator runs) with **scoped**
   lifetime; behaviours fail through `IFailureResult<T>` (static abstract, no reflection).
   `/health` is the first slice and proves the wiring.
-- **Deferred:** dispatching domain events. `AggregateRoot` records them; the dispatcher is built
-  with the first event that has a handler.
+- **Deferred:** domain events. The recording scaffolding was removed after step 7 since nothing
+  raised an event; it comes back, with a dispatcher, alongside the first event that has a handler.
 - **Not committed:** `appsettings.Development.json` (debug log levels) is excluded by the repo's
   `.gitignore` rule for `appsettings*.json`.
 

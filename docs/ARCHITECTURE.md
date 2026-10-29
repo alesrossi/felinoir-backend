@@ -49,7 +49,7 @@ The rule is enforced by architecture tests (`tests/Felinoir.UnitTests/Architectu
 ```text
 src/
 |-- Felinoir.Domain/
-|   |-- Common/          Entity, AggregateRoot, IDomainEvent, Result, Error, IFailureResult
+|   |-- Common/          Entity, AggregateRoot, Result, Error, IFailureResult
 |   |-- Entities/        Movie, Cinema, Screening, City, FelixCache   (read-only, init-only)
 |   |-- Lobbies/         Lobby (aggregate root), Participant, LobbyId, ParticipantId,
 |   |                    ParticipantName, LobbyNote, DeviceHash, ScreeningSnapshot, LobbyErrors

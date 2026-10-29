@@ -55,8 +55,6 @@ public class LobbyConfiguration : IEntityTypeConfiguration<Lobby>
             .HasConstraintName("lobby_participants_lobby_id_fkey")
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(l => l.Participants).HasField("_participants");
-
-        builder.Ignore(l => l.DomainEvents);
     }
 }
 
