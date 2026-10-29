@@ -174,9 +174,11 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 Before the production cutover (`docs/SCRAPERS-SCHEMA-MIGRATION.md`, "Production cutover", which has
 the server runbook and the rollback).
 
-1. **Images**: `docker build -t cinema-backend:test .` and
-   `docker build --target migrator -t cinema-backend-migrator:test .`; scrapers and frontend images
-   from their repos with the changes above.
+1. **Images**: `docker build --network host -t cinema-backend:test .` and
+   `docker build --network host --target migrator -t cinema-backend-migrator:test .`; scrapers and
+   frontend images from their repos with the changes above. `--network host` is needed on the dev
+   machine (Calico blocks Docker's bridge network, so restores can't reach NuGet / npm); CI and the
+   server don't need it.
 2. **Data**: restore a `pg_dump` of production into a local Postgres (never point at production).
 3. **Migrate**: run the migrator against it. Expect *"Adopting a database built by the scrapers"*, then
    the pending migrations, then exit 0; a second run reports *"up to date"*.
