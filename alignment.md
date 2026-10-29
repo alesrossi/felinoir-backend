@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-29, after rework step 4.
+**Last updated:** 2026-10-29, after rework step 5.
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -29,6 +29,10 @@ Legend: **Required** = the release breaks without it · **Check** = verify while
 | 3 | Error responses are RFC 7807 `application/problem+json` keeping the `error` member, plus `traceId`; empty framework errors (malformed JSON, unknown route, bad query parameter) now have a body | frontend |
 | 3 | Every response has `X-Trace-Id` (exposed by CORS); an incoming W3C `traceparent` is continued | frontend |
 | 4 | `/movies/{id}`, `/movies/slug/{slug}`, `/cinemas/{id}`: 404 and 400 are problem responses; `error` keeps its old values (`"Not found"`, `"Invalid id"`); success bodies unchanged | frontend |
+| 5 | `/lobbies/*` errors are problem responses with the same codes and statuses (`missing_device`, `invalid_name`, `invalid_note`, `not_found`, `name_taken`, `already_joined`, `screening_not_found`, `screening_past`), plus a `detail` text on validation errors | frontend |
+| 5 | Lobby `version`: a new lobby starts at **1** (was 2) and every change adds **1** (a claim added 2); still strictly increasing | frontend |
+| 5 | New 409 `conflict` when a lobby change loses a race twice in a row (extremely rare) | frontend |
+| 5 | Version triggers and their functions dropped; `lobby_participants_one_per_device` is a deferrable constraint | scrapers |
 | 3 | Logs: Elastic Common Schema JSON on stdout (Production), configurable through `Serilog__…` variables; tracing exported over OTLP when configured | server |
 
 ---
@@ -42,7 +46,9 @@ Full strategy and code sketches: `docs/SCRAPERS-SCHEMA-MIGRATION.md`.
 - [ ] **Stop issuing DDL**: delete `src/lib/db/postgres/schema.ts` (`SCHEMA`, `OPTIONAL_SCHEMA`), the
       statement splitter and the bootstrap call in `client.ts`; delete `npm run db:migrate` and
       `src/scripts/migrate-db.ts`. Otherwise every connection re-creates the old unique indexes next to
-      the new primary keys, and `CREATE INDEX … ON cinemas (city)` **fails** now that the column is gone.
+      the new primary keys, `CREATE INDEX … ON cinemas (city)` **fails** now that the column is gone,
+      and the bootstrap would re-create the lobby version triggers the backend dropped (versions would
+      then jump by two per change).
 - [ ] **Schema version guard** at pool creation:
       `SELECT 1 FROM "__EFMigrationsHistory" WHERE migration_id = $1` (snake_case column), with
       `REQUIRED_MIGRATION` set to the backend's latest migration (today `20261029090606_Cities`).
@@ -90,6 +96,9 @@ works with problem responses.
       errors (`name_taken`, `already_joined`, `not_found`, …), 404 pages. Movie and cinema lookups
       (`getMovieById`, `getMovieBySlug`, cinema pages) only look at `res.ok`, so their 404 becoming a
       problem response changes nothing (checked 2026-10-29 in `src/lib/api/client.ts`).
+- [ ] Lobby polling (`lobby-view.tsx`): only needs `version` to increase, which it does; check a lobby
+      created before the cutover keeps updating after it. (An unknown error code such as `conflict`
+      already falls back to the generic message in `lobbyErrorText`, checked 2026-10-29.)
 - [ ] `?from=` uses `romeWallClockKey` (`YYYY-MM-DDTHH:MM`, Rome time, no offset): unchanged
       behaviour. Only a Troisi screening starting in exactly the current minute is now excluded
       (its stored time has no seconds).
