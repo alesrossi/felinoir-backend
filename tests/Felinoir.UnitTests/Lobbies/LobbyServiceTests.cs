@@ -30,7 +30,7 @@ public class LobbyServiceTests : IDisposable
         });
         _db.Cinemas.Add(new Cinema
         {
-            Id = "nuovo-sacher", Name = "Nuovo Sacher", City = "Roma", Country = "IT",
+            Id = "nuovo-sacher", Name = "Nuovo Sacher", CityId = City.RomeId, Country = "IT",
             Website = "https://sacher", ScheduleUrl = "https://sacher/schedule",
             CreatedAt = "2026-01-01T00:00:00Z", UpdatedAt = "2026-01-01T00:00:00Z",
         });

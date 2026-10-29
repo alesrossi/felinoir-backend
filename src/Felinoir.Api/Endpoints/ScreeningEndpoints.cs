@@ -40,7 +40,8 @@ public static class ScreeningEndpoints
             .WithSummary("List screenings")
             .WithDescription(
                 "Screenings ordered by datetime, with optional filtering. `from`/`to` are inclusive "
-                + "ISO 8601 UTC bounds; set `withRelations=true` to embed the `movie` and `cinema` on each "
+                + "bounds in Italian time (a value with `Z` or an offset is converted); `city` is a city id "
+                + "such as `rome` or its name such as `Roma`; set `withRelations=true` to embed the `movie` and `cinema` on each "
                 + $"result. `limit` defaults to {DefaultLimit:N0} (max {MaxLimit:N0}), `offset` defaults to 0.")
             .Produces<List<Screening>>();
 

@@ -10,20 +10,24 @@ public class ScreeningServiceTests : PostgresTestBase
 
     private ScreeningService NewService() => new(Fixture.NewDbContext());
 
-    /// <summary>Two cinemas in different cities and two movies, with a handful of screenings.</summary>
+    /// <summary>
+    /// Two cinemas in different cities and two movies, with a handful of screenings at Italian
+    /// wall-clock times, the form the scrapers store.
+    /// </summary>
     private async Task SeedGraphAsync()
     {
+        await SeedAsync(TestData.City("milan", "Milano"));
         await SeedAsync(
-            TestData.Cinema("roma-1", city: "Roma"),
-            TestData.Cinema("milano-1", city: "Milano"),
+            TestData.Cinema("roma-1"),
+            TestData.Cinema("milano-1", cityId: "milan"),
             TestData.Movie(10, "Movie A"),
             TestData.Movie(20, "Movie B"));
 
         await SeedAsync(
-            TestData.Screening(1, movieId: 10, cinemaId: "roma-1", datetime: "2026-06-22T20:00:00Z"),
-            TestData.Screening(2, movieId: 20, cinemaId: "roma-1", datetime: "2026-06-23T18:00:00Z"),
-            TestData.Screening(3, movieId: 10, cinemaId: "milano-1", datetime: "2026-06-24T21:00:00Z"),
-            TestData.Screening(4, movieId: 20, cinemaId: "milano-1", datetime: "2026-06-25T19:00:00Z"));
+            TestData.Screening(1, movieId: 10, cinemaId: "roma-1", datetime: "2026-06-22T20:00:00"),
+            TestData.Screening(2, movieId: 20, cinemaId: "roma-1", datetime: "2026-06-23T18:00:00"),
+            TestData.Screening(3, movieId: 10, cinemaId: "milano-1", datetime: "2026-06-24T21:00:00"),
+            TestData.Screening(4, movieId: 20, cinemaId: "milano-1", datetime: "2026-06-25T19:00:00"));
     }
 
     [Fact]
@@ -56,14 +60,37 @@ public class ScreeningServiceTests : PostgresTestBase
         Assert.Equal(new[] { 1, 3 }, result.Select(s => s.Id));
     }
 
-    [Fact]
-    public async Task GetAsync_filters_by_city_via_cinema_relation()
+    [Theory]
+    [InlineData("Milano")]
+    [InlineData("milan")]
+    [InlineData("MILANO")]
+    [InlineData(" milano ")]
+    public async Task GetAsync_filters_by_city_id_or_name_ignoring_case(string city)
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { City = "Milano" });
+        var result = await NewService().GetAsync(new ScreeningQuery { City = city });
 
         Assert.Equal(new[] { 3, 4 }, result.Select(s => s.Id));
+    }
+
+    [Fact]
+    public async Task GetAsync_for_an_unknown_city_is_empty()
+    {
+        await SeedGraphAsync();
+
+        Assert.Empty(await NewService().GetAsync(new ScreeningQuery { City = "Torino" }));
+    }
+
+    [Fact]
+    public async Task GetAsync_converts_a_utc_bound_to_italian_time()
+    {
+        await SeedGraphAsync();
+
+        // 16:00 UTC is 18:00 in Rome (CEST): screening 2 starts exactly then.
+        var result = await NewService().GetAsync(new ScreeningQuery { From = "2026-06-23T16:00:00Z" });
+
+        Assert.Equal(new[] { 2, 3, 4 }, result.Select(s => s.Id));
     }
 
     [Fact]
@@ -72,7 +99,7 @@ public class ScreeningServiceTests : PostgresTestBase
         await SeedGraphAsync();
 
         // From exactly matches screening 2's datetime — it must be included.
-        var result = await NewService().GetAsync(new ScreeningQuery { From = "2026-06-23T18:00:00Z" });
+        var result = await NewService().GetAsync(new ScreeningQuery { From = "2026-06-23T18:00:00" });
 
         Assert.Equal(new[] { 2, 3, 4 }, result.Select(s => s.Id));
     }
@@ -82,7 +109,7 @@ public class ScreeningServiceTests : PostgresTestBase
     {
         await SeedGraphAsync();
 
-        var result = await NewService().GetAsync(new ScreeningQuery { To = "2026-06-24T21:00:00Z" });
+        var result = await NewService().GetAsync(new ScreeningQuery { To = "2026-06-24T21:00:00" });
 
         Assert.Equal(new[] { 1, 2, 3 }, result.Select(s => s.Id));
     }
@@ -94,8 +121,8 @@ public class ScreeningServiceTests : PostgresTestBase
 
         var result = await NewService().GetAsync(new ScreeningQuery
         {
-            From = "2026-06-23T00:00:00Z",
-            To = "2026-06-24T23:59:59Z",
+            From = "2026-06-23T00:00:00",
+            To = "2026-06-24T23:59:59",
         });
 
         Assert.Equal(new[] { 2, 3 }, result.Select(s => s.Id));
@@ -143,7 +170,7 @@ public class ScreeningServiceTests : PostgresTestBase
         });
         var first = result.First(s => s.Id == 1);
         Assert.Equal("Movie A", first.Movie!.Title);
-        Assert.Equal("Roma", first.Cinema!.City);
+        Assert.Equal("Roma", first.Cinema!.CityName);
     }
 
     [Fact]

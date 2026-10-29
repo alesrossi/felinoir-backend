@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Felinoir.Application.Common;
 using Felinoir.Application.Lobbies;
+using Felinoir.Domain.ValueObjects;
 using Felinoir.Domain.Entities;
 using Felinoir.IntegrationTests.Support;
 
@@ -21,7 +23,7 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
     private const int ScreeningId = 12345;
     private const int PastScreeningId = 999;
 
-    private readonly string _startsAt = RomeTime.ToWallClock(DateTimeOffset.UtcNow.AddDays(1));
+    private readonly string _startsAt = ScreeningTime.FromInstant(DateTimeOffset.UtcNow.AddDays(1)).ToString();
 
     public LobbyEndpointTests(PostgresFixture fixture) : base(fixture) { }
 
@@ -42,7 +44,7 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
             TestData.Cinema("nuovo-sacher", name: "Nuovo Sacher"),
             future,
             TestData.Screening(PastScreeningId, 42, "nuovo-sacher",
-                RomeTime.ToWallClock(DateTimeOffset.UtcNow.AddMinutes(-5))));
+                ScreeningTime.FromInstant(DateTimeOffset.UtcNow.AddMinutes(-5)).ToString()));
     }
 
     private HttpClient Client(string? deviceToken)
@@ -110,8 +112,8 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
         Assert.EndsWith("Z", p.GetProperty("joinedAt").GetString());
         Assert.Equal(p.GetProperty("id").GetString(), lobby.GetProperty("meId").GetString());
 
-        RomeTime.TryParseWallClock(_startsAt, out var startsAtUtc);
-        Assert.Equal(RomeTime.ToUtcString(startsAtUtc.AddHours(48)), lobby.GetProperty("expiresAt").GetString());
+        ScreeningTime.TryParse(_startsAt, out var startsAt);
+        Assert.Equal(UtcText.Format(startsAt.ToInstant().AddHours(48)), lobby.GetProperty("expiresAt").GetString());
     }
 
     [Fact]

@@ -10,7 +10,10 @@ public class Screening
     public int MovieId { get; set; }
     public string CinemaId { get; set; } = default!;
 
-    /// <summary>ISO 8601 UTC stored as TEXT, e.g. "2026-06-22T20:30:00Z".</summary>
+    /// <summary>
+    /// Italian wall-clock time with no offset, stored as TEXT, e.g. "2026-06-22T20:30:00"; read it
+    /// with <see cref="ValueObjects.ScreeningTime"/>.
+    /// </summary>
     public string Datetime { get; set; } = default!;
 
     public string? Hall { get; set; }

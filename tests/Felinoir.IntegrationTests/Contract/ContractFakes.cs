@@ -30,7 +30,7 @@ internal sealed class RecordingGeminiClient : IGeminiClient
     public Task<GeminiCacheRef?> CreateCacheAsync(string corpus, CancellationToken ct = default)
     {
         _log.AppendLine($"CreateCache -> {CacheToCreate?.Name ?? "null (caching unavailable)"}");
-        _log.AppendLine("corpus:").AppendLine(ContractCorpus.Normalise(corpus)).AppendLine();
+        _log.AppendLine("corpus:").AppendLine(corpus).AppendLine();
         return Task.FromResult(CacheToCreate);
     }
 
@@ -68,16 +68,4 @@ internal sealed class RecordingGeminiClient : IGeminiClient
         messages.Any(m => m.Content == FailTrigger)
             ? throw new HttpRequestException("Gemini exploded")
             : $"Risposta di Felix al messaggio {messages.Count}.";
-}
-
-internal static class ContractCorpus
-{
-    /// <summary>
-    /// The corpus heading carries today's real date (the corpus still reads the system clock),
-    /// so it is replaced before snapshotting.
-    /// </summary>
-    public static string Normalise(string corpus) =>
-        System.Text.RegularExpressions.Regex.Replace(
-            corpus, @"^(# .*— )\d{4}-\d{2}-\d{2}", "$1{today}",
-            System.Text.RegularExpressions.RegexOptions.Multiline);
 }

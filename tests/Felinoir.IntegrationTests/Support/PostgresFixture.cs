@@ -149,6 +149,10 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
         await _respawner.ResetAsync(conn);
+
+        // Reference data the migrations insert, which Respawn has just deleted.
+        await using var cmd = new NpgsqlCommand("INSERT INTO cities (id, name) VALUES ('rome', 'Roma')", conn);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     private static int GetFreeTcpPort()

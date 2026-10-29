@@ -10,8 +10,13 @@ public class FelixCacheConfiguration : IEntityTypeConfiguration<FelixCache>
     {
         builder.ToTable("felix_cache");
 
-        builder.HasKey(f => f.Id).HasName("felix_cache_pkey");
-        builder.Property(f => f.Id).ValueGeneratedNever().HasDefaultValue(1);   // single row, always 1
+        // One row per city.
+        builder.HasKey(f => f.CityId).HasName("felix_cache_pkey");
+        builder.HasOne<City>()
+            .WithMany()
+            .HasForeignKey(f => f.CityId)
+            .HasConstraintName("felix_cache_city_id_fkey")
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Property(f => f.CreatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
     }

@@ -37,10 +37,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("chain");
 
-                    b.Property<string>("City")
+                    b.Property<string>("CityId")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("city");
+                        .HasColumnName("city_id");
 
                     b.Property<string>("Country")
                         .IsRequired()
@@ -56,10 +56,24 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<bool>("OpenAir")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("open_air");
 
                     b.Property<string>("ScheduleUrl")
                         .IsRequired()
@@ -81,18 +95,48 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("cinemas_pkey");
 
-                    b.HasIndex("City")
-                        .HasDatabaseName("idx_cinemas_city");
+                    b.HasIndex("CityId")
+                        .HasDatabaseName("idx_cinemas_city_id");
 
                     b.ToTable("cinemas", (string)null);
                 });
 
+            modelBuilder.Entity("Felinoir.Domain.Entities.City", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
+
+                    b.HasKey("Id")
+                        .HasName("cities_pkey");
+
+                    b.ToTable("cities", (string)null);
+                });
+
             modelBuilder.Entity("Felinoir.Domain.Entities.FelixCache", b =>
                 {
-                    b.Property<int>("Id")
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1)
-                        .HasColumnName("id");
+                    b.Property<string>("CityId")
+                        .HasColumnType("text")
+                        .HasColumnName("city_id");
 
                     b.Property<string>("CacheName")
                         .IsRequired()
@@ -111,7 +155,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("expires_at");
 
-                    b.HasKey("Id")
+                    b.HasKey("CityId")
                         .HasName("felix_cache_pkey");
 
                     b.ToTable("felix_cache", (string)null);
@@ -725,6 +769,28 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                     b.ToTable("tmdb_lookup_cache", (string)null);
                 });
 
+            modelBuilder.Entity("Felinoir.Domain.Entities.Cinema", b =>
+                {
+                    b.HasOne("Felinoir.Domain.Entities.City", "City")
+                        .WithMany("Cinemas")
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("cinemas_city_id_fkey");
+
+                    b.Navigation("City");
+                });
+
+            modelBuilder.Entity("Felinoir.Domain.Entities.FelixCache", b =>
+                {
+                    b.HasOne("Felinoir.Domain.Entities.City", null)
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("felix_cache_city_id_fkey");
+                });
+
             modelBuilder.Entity("Felinoir.Domain.Entities.LobbyParticipant", b =>
                 {
                     b.HasOne("Felinoir.Domain.Entities.Lobby", "Lobby")
@@ -761,6 +827,11 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Felinoir.Domain.Entities.Cinema", b =>
                 {
                     b.Navigation("Screenings");
+                });
+
+            modelBuilder.Entity("Felinoir.Domain.Entities.City", b =>
+                {
+                    b.Navigation("Cinemas");
                 });
 
             modelBuilder.Entity("Felinoir.Domain.Entities.Lobby", b =>

@@ -1,12 +1,12 @@
 namespace Felinoir.Domain.Entities;
 
 /// <summary>
-/// Single-row table (Id always = 1) that persists the active Gemini context cache
-/// reference across server restarts.
+/// The active Gemini context cache of one city's Felix corpus, persisted so it survives server
+/// restarts. One row per <see cref="City"/>.
 /// </summary>
 public class FelixCache
 {
-    public int Id { get; set; } = 1;
+    public string CityId { get; set; } = default!;
 
     /// <summary>Gemini resource name, e.g. "cachedContents/abc123".</summary>
     public string CacheName { get; set; } = default!;

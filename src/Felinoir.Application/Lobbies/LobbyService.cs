@@ -1,6 +1,8 @@
+using Felinoir.Application.Common;
 using Felinoir.Application.Common.Exceptions;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Entities;
+using Felinoir.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Felinoir.Application.Lobbies;
@@ -39,8 +41,9 @@ public class LobbyService : ILobbyService
                 .Include(s => s.Cinema)
                 .FirstOrDefaultAsync(s => s.Id == screeningId, ct);
 
-        if (screening is null || !RomeTime.TryParseWallClock(screening.Datetime, out var startsAt))
+        if (screening is null || !ScreeningTime.TryParse(screening.Datetime, out var screeningTime))
             return LobbyError.ScreeningNotFound;
+        var startsAt = screeningTime.ToInstant();
 
         var now = _time.GetUtcNow();
         if (startsAt <= now) return LobbyError.ScreeningPast;
@@ -222,7 +225,7 @@ public class LobbyService : ILobbyService
             {
                 Id = p.Id,
                 Name = p.Name,
-                JoinedAt = RomeTime.ToUtcString(p.JoinedAt),
+                JoinedAt = UtcText.Format(p.JoinedAt),
                 IsMe = IsDevice(p, deviceHash),
             })
             .ToList();
@@ -242,7 +245,7 @@ public class LobbyService : ILobbyService
                 PosterUrl = lobby.PosterUrl,
                 CinemaId = lobby.CinemaId,
                 CinemaName = lobby.CinemaName,
-                Datetime = RomeTime.ToWallClock(lobby.StartsAt),
+                Datetime = ScreeningTime.FromInstant(lobby.StartsAt).ToString(),
                 IsOV = lobby.IsOV,
                 Is3D = lobby.Is3D,
                 BookingUrl = lobby.BookingUrl,
@@ -250,7 +253,7 @@ public class LobbyService : ILobbyService
             Note = lobby.Note,
             Participants = participants,
             MeId = participants.FirstOrDefault(p => p.IsMe)?.Id,
-            ExpiresAt = RomeTime.ToUtcString(lobby.StartsAt + Lifetime),
+            ExpiresAt = UtcText.Format(lobby.StartsAt + Lifetime),
         };
     }
 

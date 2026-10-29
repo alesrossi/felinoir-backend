@@ -18,7 +18,8 @@ public sealed class FelixService : IFelixService
 {
     private static readonly TimeSpan CacheLead = TimeSpan.FromHours(1);
     private static readonly TimeSpan InlineTtl = TimeSpan.FromHours(24);
-    private const int CacheRowId = 1;
+    /// <summary>Felix serves Rome only until it keeps state per city (rework plan, step 6).</summary>
+    private const string CityId = City.RomeId;
 
     private readonly FelixState _state;
     private readonly IGeminiClient _gemini;
@@ -50,7 +51,7 @@ public sealed class FelixService : IFelixService
             _state.Cache = null; // cache expired mid-flight — fall through to inline
         }
 
-        var corpus = _state.Inline?.Corpus ?? await _corpus.BuildAsync(ct);
+        var corpus = _state.Inline?.Corpus ?? await _corpus.BuildAsync(CityId, ct);
         return await _gemini.GenerateInlineAsync(contents, corpus, ct);
     }
 
@@ -73,7 +74,7 @@ public sealed class FelixService : IFelixService
             }
 
             // Cold start — build the corpus and attempt to cache it.
-            var corpus = await _corpus.BuildAsync(ct);
+            var corpus = await _corpus.BuildAsync(CityId, ct);
             var created = await _gemini.CreateCacheAsync(corpus, ct);
 
             if (created is not null)
@@ -105,7 +106,7 @@ public sealed class FelixService : IFelixService
         try
         {
             var row = await _db.FelixCache.AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == CacheRowId, ct);
+                .FirstOrDefaultAsync(f => f.CityId == CityId, ct);
             if (row is null) return null;
 
             if (!TryParseTimestamp(row.ExpiresAt, out var expiresAt) || expiresAt <= DateTimeOffset.UtcNow)
@@ -125,12 +126,12 @@ public sealed class FelixService : IFelixService
         try
         {
             var expiresAt = FormatTimestamp(cache.ExpiresAt);
-            var existing = await _db.FelixCache.FirstOrDefaultAsync(f => f.Id == CacheRowId, ct);
+            var existing = await _db.FelixCache.FirstOrDefaultAsync(f => f.CityId == CityId, ct);
             if (existing is null)
             {
                 _db.FelixCache.Add(new FelixCache
                 {
-                    Id = CacheRowId,
+                    CityId = CityId,
                     CacheName = cache.Name,
                     ExpiresAt = expiresAt,
                     CreatedAt = FormatTimestamp(DateTimeOffset.UtcNow),

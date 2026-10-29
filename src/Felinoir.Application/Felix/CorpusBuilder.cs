@@ -2,12 +2,13 @@ using System.Globalization;
 using System.Text.Json;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Entities;
+using Felinoir.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Felinoir.Application.Felix;
 
 /// <summary>
-/// Builds the Markdown corpus of films currently showing in Rome. Ported from the
+/// Builds the Markdown corpus of films currently showing in one city. Ported from the
 /// original Node backend so Felix's answers stay consistent: only films with a future
 /// screening are included, titles prefer the TMDB form, ratings follow IMDb → RT → MC,
 /// and screenings are grouped per cinema with [VO]/[3D]/[Open Air] tags.
@@ -21,17 +22,23 @@ public sealed class CorpusBuilder : ICorpusBuilder
     private static readonly CultureInfo Italian = CultureInfo.GetCultureInfo("it-IT");
 
     private readonly IApplicationDbContext _db;
-    private readonly ICinemaConfigProvider _cinemaConfig;
+    private readonly TimeProvider _time;
 
-    public CorpusBuilder(IApplicationDbContext db, ICinemaConfigProvider cinemaConfig)
+    public CorpusBuilder(IApplicationDbContext db, TimeProvider time)
     {
         _db = db;
-        _cinemaConfig = cinemaConfig;
+        _time = time;
     }
 
-    public async Task<string> BuildAsync(CancellationToken ct = default)
+    public async Task<string> BuildAsync(string cityId, CancellationToken ct = default)
     {
-        var now = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+        // Screening times are Italian wall clock, so "now" must be too for the text comparison.
+        var now = ScreeningTime.FromInstant(_time.GetUtcNow()).ToString();
+
+        var cityName = await _db.Cities.AsNoTracking()
+            .Where(c => c.Id == cityId)
+            .Select(c => c.Name)
+            .FirstOrDefaultAsync(ct) ?? cityId;
 
         var movies = await _db.Movies.AsNoTracking()
             .OrderBy(m => m.Id)
@@ -39,23 +46,13 @@ public sealed class CorpusBuilder : ICorpusBuilder
             .ToListAsync(ct);
 
         var screenings = await _db.Screenings.AsNoTracking()
-            .Where(s => string.Compare(s.Datetime, now) >= 0)
+            .Where(s => s.Cinema!.CityId == cityId && string.Compare(s.Datetime, now) >= 0)
             .Take(ScreeningLimit)
             .ToListAsync(ct);
 
-        var cinemas = await _db.Cinemas.AsNoTracking().ToListAsync(ct);
-
-        // Cinema names come from the DB; the static config fills any gaps and is the
-        // sole source of the open-air flag.
-        var cinemaNames = new Dictionary<string, string>();
-        var cinemaOpenAir = new Dictionary<string, bool>();
-        foreach (var c in cinemas)
-            cinemaNames[c.Id] = c.Name;
-        foreach (var c in _cinemaConfig.GetAll())
-        {
-            cinemaNames.TryAdd(c.Id, c.Name);
-            cinemaOpenAir[c.Id] = c.OpenAir;
-        }
+        var cinemas = await _db.Cinemas.AsNoTracking().Where(c => c.CityId == cityId).ToListAsync(ct);
+        var cinemaNames = cinemas.ToDictionary(c => c.Id, c => c.Name);
+        var cinemaOpenAir = cinemas.ToDictionary(c => c.Id, c => c.OpenAir);
 
         var byMovie = screenings
             .GroupBy(s => s.MovieId)
@@ -65,7 +62,7 @@ public sealed class CorpusBuilder : ICorpusBuilder
 
         var lines = new List<string>
         {
-            $"# Film in programmazione a Roma — {now[..10]}",
+            $"# Film in programmazione a {cityName} — {now[..10]}",
             $"Totale: {active.Count} film",
             "",
         };
@@ -148,10 +145,9 @@ public sealed class CorpusBuilder : ICorpusBuilder
         foreach (var s in movieScreenings)
         {
             var name = cinemaNames.GetValueOrDefault(s.CinemaId, s.CinemaId);
-            var dt = DateTimeOffset.Parse(s.Datetime, CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).UtcDateTime;
-            var date = dt.ToString("ddd dd/MM", Italian);
-            var time = dt.ToString("HH:mm", Italian);
+            var (date, time) = ScreeningTime.TryParse(s.Datetime, out var at)
+                ? (at.WallClock.ToString("ddd dd/MM", Italian), at.WallClock.ToString("HH:mm", Italian))
+                : (s.Datetime, "");
             var tag = $"{(s.IsOV ? " [VO]" : "")}{(s.Is3D ? " [3D]" : "")}";
 
             if (!byCinema.TryGetValue(name, out var entry))

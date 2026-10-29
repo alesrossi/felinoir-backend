@@ -2,8 +2,8 @@ namespace Felinoir.Application.Screenings;
 
 /// <summary>
 /// Filter/pagination criteria for <see cref="IScreeningService.GetAsync"/>.
-/// <see cref="From"/>/<see cref="To"/> are inclusive ISO 8601 UTC bounds compared
-/// lexicographically (valid because the stored format is fixed-width UTC).
+/// <see cref="From"/>/<see cref="To"/> are inclusive bounds in Italian time; one with <c>Z</c> or an
+/// offset is converted first. <see cref="City"/> is a city id or display name, ignoring case.
 /// </summary>
 public record ScreeningQuery
 {

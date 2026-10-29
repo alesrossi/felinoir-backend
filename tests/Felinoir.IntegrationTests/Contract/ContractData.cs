@@ -7,9 +7,9 @@ namespace Felinoir.IntegrationTests.Contract;
 /// The fixed dataset the contract snapshots are taken against. Never change existing values
 /// casually: every snapshot depends on them. Add new rows at the end instead.
 ///
-/// Screenings are in 2099 (Italian local time, as the scrapers write them), so they stay
-/// "upcoming" for the real clock that Felix's corpus still reads. Lobby tests run on
-/// <see cref="Now"/>, a frozen clock on the morning of the first screening day.
+/// Screenings are in 2099, at Italian local time as the scrapers write them. The API runs on
+/// <see cref="Now"/>, a frozen clock on the morning of the first screening day, so one
+/// screening (<see cref="MorningScreening"/>) has already started.
 /// </summary>
 internal static class ContractData
 {
@@ -21,9 +21,10 @@ internal static class ContractData
     public const int Chimera = 3;
     public const int NotShowing = 4;
 
-    public const string Adriano = "cinema-adriano";      // in cinemas.yml, not open-air
-    public const string SanCosimato = "san-cosimato";    // in cinemas.yml, open-air
-    public const string Augustus = "multiplex-augustus"; // not in cinemas.yml, in Velletri
+    // Every cinema is listed under Rome, the only city.
+    public const string Adriano = "cinema-adriano";
+    public const string SanCosimato = "san-cosimato";    // open-air
+    public const string Augustus = "multiplex-augustus"; // in Velletri, outside the municipality
 
     public const int EveningScreening = 1;
     public const int OpenAirScreening = 2;
@@ -33,9 +34,9 @@ internal static class ContractData
 
     public static object[] All() =>
     [
-        Cinema(Adriano, "Cinema Adriano", "Roma", chain: "NVR", address: "Piazza Cavour, 22, 00193 Roma RM"),
-        Cinema(SanCosimato, "Piazza San Cosimato", "Roma"),
-        Cinema(Augustus, "Multiplex Augustus", "Velletri", address: "Viale Oberdan, 00049 Velletri RM"),
+        Cinema(Adriano, "Cinema Adriano", chain: "NVR", address: "Piazza Cavour, 22, 00193 Roma RM"),
+        Cinema(SanCosimato, "Piazza San Cosimato", openAir: true),
+        Cinema(Augustus, "Multiplex Augustus", address: "Viale Oberdan, 00049 Velletri RM"),
 
         DuneMovie(),
         TestData.Movie(Shorts, title: "Cortometraggi d'autore", createdAt: "2026-02-01T09:00:00Z"),
@@ -58,11 +59,12 @@ internal static class ContractData
     ];
 
     private static Cinema Cinema(
-        string id, string name, string city, string? chain = null, string? address = null)
+        string id, string name, string? chain = null, string? address = null, bool openAir = false)
     {
-        var cinema = TestData.Cinema(id, name: name, city: city);
+        var cinema = TestData.Cinema(id, name: name);
         cinema.Chain = chain;
         cinema.Address = address;
+        cinema.OpenAir = openAir;
         return cinema;
     }
 

@@ -12,7 +12,14 @@ public class Cinema
     public string Name { get; set; } = default!;
     public string? Chain { get; set; }
     public string? Address { get; set; }
-    public string City { get; set; } = default!;
+
+    /// <summary>
+    /// The <see cref="Entities.City"/>'s display name, serialised as <c>city</c> as before cities
+    /// had their own table. Needs <see cref="City"/> loaded; queries that return cinemas include it.
+    /// </summary>
+    [JsonPropertyName("city")]
+    public string? CityName => City?.Name;
+
     public string Country { get; set; } = "IT";
     public string Website { get; set; } = default!;
     public string ScheduleUrl { get; set; } = default!;
@@ -20,6 +27,23 @@ public class Cinema
     /// <summary>ISO 8601 UTC timestamp stored as TEXT (never TIMESTAMPTZ).</summary>
     public string CreatedAt { get; set; } = default!;
     public string UpdatedAt { get; set; } = default!;
+
+    /// <summary>The city the cinema is listed under, not necessarily the town in its address.</summary>
+    [JsonIgnore]
+    public string CityId { get; set; } = default!;
+
+    [JsonIgnore]
+    public double? Latitude { get; set; }
+
+    [JsonIgnore]
+    public double? Longitude { get; set; }
+
+    /// <summary>An outdoor venue (summer arenas); tagged as such in Felix's corpus.</summary>
+    [JsonIgnore]
+    public bool OpenAir { get; set; }
+
+    [JsonIgnore]
+    public City? City { get; set; }
 
     [JsonIgnore]
     public ICollection<Screening> Screenings { get; set; } = new List<Screening>();

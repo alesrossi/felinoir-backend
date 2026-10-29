@@ -12,13 +12,16 @@ public static class MovieEndpoints
     {
         var group = app.MapGroup("/movies").WithTags("Movies");
 
-        group.MapGet("/", async (int? limit, int? offset, IMovieService movies, CancellationToken ct) =>
+        group.MapGet("/", async (int? limit, int? offset, string? city, IMovieService movies, CancellationToken ct) =>
             Results.Ok(await movies.GetAllAsync(
                 Math.Clamp(limit ?? DefaultLimit, 0, MaxLimit),
                 Math.Max(offset ?? 0, 0),
+                city,
                 ct)))
             .WithSummary("List movies")
-            .WithDescription($"Movies ordered by recency. `limit` defaults to {DefaultLimit} (max {MaxLimit}); `offset` defaults to 0.")
+            .WithDescription(
+                $"Movies ordered by recency. `limit` defaults to {DefaultLimit} (max {MaxLimit}); `offset` defaults to 0. "
+                + "With `city` (a city id such as `rome`, or its name such as `Roma`), only movies with a screening there.")
             .Produces<List<Movie>>();
 
         // Registered before "/{id}" so the literal "slug" segment is never treated as an id.

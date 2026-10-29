@@ -14,9 +14,12 @@ public class FelixServiceTests
     private sealed class StubCorpus(string corpus) : ICorpusBuilder
     {
         public int Calls { get; private set; }
-        public Task<string> BuildAsync(CancellationToken ct = default)
+        public string? CityId { get; private set; }
+
+        public Task<string> BuildAsync(string cityId, CancellationToken ct = default)
         {
             Calls++;
+            CityId = cityId;
             return Task.FromResult(corpus);
         }
     }
@@ -94,7 +97,7 @@ public class FelixServiceTests
         using var db = InMemoryDb.Create();
         db.FelixCache.Add(new FelixCache
         {
-            Id = 1,
+            CityId = City.RomeId,
             CacheName = "cachedContents/from-db",
             ExpiresAt = FarFuture.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
             CreatedAt = "2026-01-01T00:00:00Z",

@@ -11,6 +11,7 @@ namespace Felinoir.Application.Common.Interfaces;
 /// </summary>
 public interface IApplicationDbContext
 {
+    DbSet<City> Cities { get; }
     DbSet<Cinema> Cinemas { get; }
     DbSet<Movie> Movies { get; }
     DbSet<Screening> Screenings { get; }

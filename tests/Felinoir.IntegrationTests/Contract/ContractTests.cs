@@ -86,6 +86,8 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
         await r.GetAsync("/movies/slug/dune-parte-due");
         await r.GetAsync("/movies/slug/la-chimera");
         await r.GetAsync("/movies/slug/does-not-exist");
+        await r.GetAsync("/movies?city=rome", label: "every movie with a screening in Rome");
+        await r.GetAsync("/movies?city=Milano", label: "unknown city");
         await Snapshot(r);
     }
 
@@ -97,6 +99,8 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
         await r.GetAsync($"/cinemas/{ContractData.Adriano}");
         await r.GetAsync($"/cinemas/{ContractData.Augustus}");
         await r.GetAsync("/cinemas/does-not-exist");
+        await r.GetAsync("/cinemas?city=Roma");
+        await r.GetAsync("/cinemas?city=milano", label: "unknown city");
         await Snapshot(r);
     }
 
@@ -108,8 +112,11 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
         await r.GetAsync($"/screenings?cinemaId={ContractData.Adriano}");
         await r.GetAsync($"/screenings?movieId={ContractData.Dune}");
         await r.GetAsync("/screenings?city=Roma");
-        await r.GetAsync("/screenings?city=Velletri");
+        await r.GetAsync("/screenings?city=rome", label: "city id");
+        await r.GetAsync("/screenings?city=ROMA", label: "name, any case");
+        await r.GetAsync("/screenings?city=Velletri", label: "a town, not a city: Augustus is a Rome cinema");
         await r.GetAsync("/screenings?city=Milano");
+        await r.GetAsync("/screenings?from=2099-06-02T19:30:00Z", label: "UTC bound, 21:30 in Rome");
         await r.GetAsync("/screenings?from=2099-06-02T00:00:00");
         await r.GetAsync("/screenings?to=2099-06-01T23:59:59");
         await r.GetAsync("/screenings?from=2099-06-01T00:00:00&to=2099-06-02T23:59:59&cinemaId=cinema-adriano");
@@ -314,7 +321,7 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
     private async Task<string> FelixCacheRowsAsync()
     {
         await using var db = Fixture.NewDbContext();
-        var rows = await db.FelixCache.AsNoTracking().OrderBy(f => f.Id).ToListAsync();
-        return string.Join('\n', rows.Select(f => $"id={f.Id} cache_name={f.CacheName} expires_at={f.ExpiresAt}"));
+        var rows = await db.FelixCache.AsNoTracking().OrderBy(f => f.CityId).ToListAsync();
+        return string.Join('\n', rows.Select(f => $"city_id={f.CityId} cache_name={f.CacheName} expires_at={f.ExpiresAt}"));
     }
 }

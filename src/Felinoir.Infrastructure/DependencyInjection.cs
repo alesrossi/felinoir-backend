@@ -23,10 +23,6 @@ public static class DependencyInjection
         // No pg_cron on the server, so expired lobbies are deleted from here.
         services.AddHostedService<ExpiredLobbyCleanupService>();
 
-        var cinemasPath = configuration["CINEMAS_CONFIG_PATH"];
-        cinemasPath = string.IsNullOrWhiteSpace(cinemasPath) ? CinemasConfigLocator.Locate() : cinemasPath;
-        services.AddSingleton<ICinemaConfigProvider>(_ => new CinemasYamlConfigProvider(cinemasPath));
-
         // One long-lived HttpClient for Gemini, kept private to the client.
         services.AddSingleton<IGeminiClient>(sp => new GeminiClient(
             new HttpClient(),

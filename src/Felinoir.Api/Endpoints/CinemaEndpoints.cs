@@ -9,10 +9,12 @@ public static class CinemaEndpoints
     {
         var group = app.MapGroup("/cinemas").WithTags("Cinemas");
 
-        group.MapGet("/", async (ICinemaService cinemas, CancellationToken ct) =>
-            Results.Ok(await cinemas.GetAllAsync(ct)))
+        group.MapGet("/", async (string? city, ICinemaService cinemas, CancellationToken ct) =>
+            Results.Ok(await cinemas.GetAllAsync(city, ct)))
             .WithSummary("List cinemas")
-            .WithDescription("Returns all cinemas, ordered by name.")
+            .WithDescription(
+                "Returns all cinemas, ordered by name. With `city` (a city id such as `rome`, or its name "
+                + "such as `Roma`), only the cinemas listed under that city.")
             .Produces<List<Cinema>>();
 
         group.MapGet("/{id}", async (string id, ICinemaService cinemas, CancellationToken ct) =>

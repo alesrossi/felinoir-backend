@@ -23,16 +23,19 @@ internal static class TestData
             UpdatedAt = createdAt,
         };
 
+    /// <summary>A city other than Rome, which tests add themselves (only Rome is seeded).</summary>
+    public static City City(string id, string name) => new() { Id = id, Name = name };
+
     public static Cinema Cinema(
         string id,
         string name = "A Cinema",
-        string city = "Roma",
+        string cityId = Domain.Entities.City.RomeId,
         string createdAt = "2026-01-01T00:00:00Z")
         => new()
         {
             Id = id,
             Name = name,
-            City = city,
+            CityId = cityId,
             Country = "IT",
             Website = $"https://{id}.example.com",
             ScheduleUrl = $"https://{id}.example.com/schedule",

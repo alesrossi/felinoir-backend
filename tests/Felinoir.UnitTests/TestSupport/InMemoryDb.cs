@@ -24,7 +24,7 @@ internal static class InMemoryDb
         // with only a database default (a shadow property no test sets), so fill it here.
         db.SavingChanges += (_, _) =>
         {
-            foreach (var entry in db.ChangeTracker.Entries<Domain.Entities.Movie>())
+            foreach (var entry in db.ChangeTracker.Entries<global::Felinoir.Domain.Entities.Movie>())
             {
                 var hasMatches = entry.Property("HasMatches");
                 if (entry.State == EntityState.Added && hasMatches.CurrentValue is null)

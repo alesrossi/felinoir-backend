@@ -185,13 +185,7 @@ Content-Type: application/json; charset=utf-8
     "isOV": false,
     "createdAt": "2026-01-01T00:00:00Z",
     "updatedAt": "2026-01-01T00:00:00Z"
-  }
-]
-
-### GET /screenings?city=Velletri
-200 OK
-Content-Type: application/json; charset=utf-8
-[
+  },
   {
     "id": 3,
     "movieId": 2,
@@ -204,10 +198,161 @@ Content-Type: application/json; charset=utf-8
   }
 ]
 
+### GET /screenings?city=rome   (city id)
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?city=ROMA   (name, any case)
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?city=Velletri   (a town, not a city: Augustus is a Rome cinema)
+200 OK
+Content-Type: application/json; charset=utf-8
+[]
+
 ### GET /screenings?city=Milano
 200 OK
 Content-Type: application/json; charset=utf-8
 []
+
+### GET /screenings?from=2099-06-02T19:30:00Z   (UTC bound, 21:30 in Rome)
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
 
 ### GET /screenings?from=2099-06-02T00:00:00
 200 OK

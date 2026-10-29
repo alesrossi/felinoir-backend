@@ -34,8 +34,6 @@ ENTRYPOINT ["dotnet", "Felinoir.Migrator.dll"]
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
-# Static cinema metadata (open-air flag, coordinates) read at runtime by the Felix corpus.
-COPY cinemas.yml ./cinemas.yml
 
 # DATABASE_URL and GEMINI_API_KEY are supplied at runtime, not baked in.
 ENV PORT=3001

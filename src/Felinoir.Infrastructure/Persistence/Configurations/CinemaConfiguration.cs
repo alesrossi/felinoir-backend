@@ -17,6 +17,14 @@ public class CinemaConfiguration : IEntityTypeConfiguration<Cinema>
         builder.Property(c => c.CreatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
         builder.Property(c => c.UpdatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
 
-        builder.HasIndex(c => c.City).HasDatabaseName("idx_cinemas_city");
+        builder.Property(c => c.OpenAir).HasDefaultValue(false);
+
+        builder.HasOne(c => c.City)
+            .WithMany(c => c.Cinemas)
+            .HasForeignKey(c => c.CityId)
+            .HasConstraintName("cinemas_city_id_fkey")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(c => c.CityId).HasDatabaseName("idx_cinemas_city_id");
     }
 }

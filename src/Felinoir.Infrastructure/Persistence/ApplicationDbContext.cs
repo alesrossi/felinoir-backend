@@ -20,6 +20,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
     }
 
+    public DbSet<City> Cities => Set<City>();
     public DbSet<Cinema> Cinemas => Set<Cinema>();
     public DbSet<Movie> Movies => Set<Movie>();
     public DbSet<Screening> Screenings => Set<Screening>();
