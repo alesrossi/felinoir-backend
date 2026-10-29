@@ -25,6 +25,11 @@ EF Core migrations in this repository are the single source of truth for all DDL
 - The scrapers stop issuing DDL. They check at startup that `__EFMigrationsHistory` contains the
   migration they were written against, and refuse to run otherwise.
 
+- The existing databases (production and local) have no `__EFMigrationsHistory`: the scrapers
+  created their schema, and EF migrations only ever ran in test containers. A one-time baseline
+  script marks the five migrations up to `MovieCreditsAndAwards` as applied, once a drift test has
+  shown the database already matches them.
+
 ## Consequences
 
 - A schema change is one PR here plus, if the scrapers write the new column, a scraper release

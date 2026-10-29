@@ -100,17 +100,23 @@ because the version guard already stops a scraper from running on the wrong sche
 
 ## Production cutover (once the backend refactor is finished)
 
-Production currently has every EF migration up to `MovieCreditsAndAwards` applied, plus the
-objects that only the scrapers' bootstrap created.
+Production has **no `__EFMigrationsHistory` table** (checked 2026-10-29). Its whole schema was
+created by the scrapers' bootstrap, and EF has never recorded a migration there. The schema does
+already contain everything the five existing migrations (`InitialCreate` …
+`MovieCreditsAndAwards`) create; the backend's drift test proves this against
+`tests/schema/production.sql`.
 
 1. **Freeze:** pause the daily scraper cron (`server/daily-report.sh`).
 2. **Back up:** take a `pg_dump` (data and schema) of production and keep it off the server.
-3. **Rehearse:** restore the dump into a local Postgres, run the new migrator against it, then
+3. **Rehearse:** restore the dump into a local Postgres, apply `baseline.sql` (which creates
+   `__EFMigrationsHistory` and marks the five existing migrations as applied, and does nothing on
+   a database that already has them), run the new migrator against it, then
    run the new API and one scraper pass against the result. Check the characterisation
    snapshots and the drift test. Fix and repeat until it's clean.
 4. **Release images:** the backend API and the migrator are tagged with the same version. The
    scraper release has `REQUIRED_MIGRATION` set to the backend's latest migration.
-5. **Deploy, in order:** the migrator (one-shot), then the API, then the scraper image (with the
+5. **Deploy, in order:** `baseline.sql` (once, against production), the migrator (one-shot),
+   then the API, then the scraper image (with the
    updated `cinemas.yml`). In `server/docker-compose.yml`, `api` and `cinema-scraper` depend on
    `migrator` with `condition: service_completed_successfully`.
 6. **Verify:**

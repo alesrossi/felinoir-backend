@@ -51,6 +51,16 @@ Done when: the snapshot suite passes against the current code and runs in CI.
 
 ## Step 1 — Schema ownership (ADR 0001)
 
+- **Baseline the existing migrations.** Neither production nor the local database has an
+  `__EFMigrationsHistory` table (checked 2026-10-29). Every table there was created by the
+  scrapers' `schema.ts`, and the five existing migrations (`InitialCreate` …
+  `MovieCreditsAndAwards`) have only ever run inside test containers. Before the first
+  migrator run, a one-time, idempotent `baseline.sql` (shipped with the migrator) creates the
+  history table and inserts those five ids with product version
+  `10.0.9`, marking them as already applied. That is only correct if the database already
+  contains everything they create, and the drift test proves it: a database built from exactly
+  those five migrations must match `production.sql`, apart from the scraper-only objects listed
+  below. Apply the baseline to the local database first, then rehearse it at the cutover.
 - **`AdoptScraperSchema` migration.** Bring into the EF model everything that exists only in
   the scrapers' `schema.ts`. Known so far:
   - `movies.canonical_title`, `tmdb_match_attempts`, `tmdb_last_attempt_at`, `has_matches`
