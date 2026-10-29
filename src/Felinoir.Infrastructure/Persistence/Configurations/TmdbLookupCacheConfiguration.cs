@@ -1,4 +1,4 @@
-using Felinoir.Domain.Entities;
+using Felinoir.Infrastructure.Persistence.ScraperTables;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,8 +11,10 @@ public class TmdbLookupCacheConfiguration : IEntityTypeConfiguration<TmdbLookupC
         builder.ToTable("tmdb_lookup_cache");
 
         // The table's unique (scraped_title, scraped_original_title) pair is its identity.
-        builder.HasKey(t => new { t.ScrapedTitle, t.ScrapedOriginalTitle });
+        builder.HasKey(t => new { t.ScrapedTitle, t.ScrapedOriginalTitle })
+            .HasName("tmdb_lookup_cache_pkey");
 
         builder.Property(t => t.ScrapedOriginalTitle).HasDefaultValue("");
+        builder.Property(t => t.LookedUpAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
     }
 }

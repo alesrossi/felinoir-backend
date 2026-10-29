@@ -1,6 +1,8 @@
-namespace Felinoir.Domain.Entities;
+namespace Felinoir.Infrastructure.Persistence.ScraperTables;
 
 /// <summary>
+/// Persistence-only: a table the scrapers own the data of and this server never reads; it is
+/// mapped so that EF migrations own its schema (ADR 0001).
 /// Caches scraped-title → TMDB id resolutions to avoid redundant API calls during enrichment.
 /// Keyed by (ScrapedTitle, ScrapedOriginalTitle).
 /// </summary>

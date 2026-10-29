@@ -14,8 +14,6 @@ public interface IApplicationDbContext
     DbSet<Cinema> Cinemas { get; }
     DbSet<Movie> Movies { get; }
     DbSet<Screening> Screenings { get; }
-    DbSet<TmdbLookupCache> TmdbLookupCache { get; }
-    DbSet<AiMatchVerdict> AiMatchVerdicts { get; }
     DbSet<FelixCache> FelixCache { get; }
     DbSet<Lobby> Lobbies { get; }
     DbSet<LobbyParticipant> LobbyParticipants { get; }

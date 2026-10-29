@@ -10,10 +10,12 @@ public class CinemaConfiguration : IEntityTypeConfiguration<Cinema>
     {
         builder.ToTable("cinemas");
 
-        builder.HasKey(c => c.Id);
+        builder.HasKey(c => c.Id).HasName("cinemas_pkey");
         builder.Property(c => c.Id).ValueGeneratedNever();   // slug, supplied by scraper
 
         builder.Property(c => c.Country).HasDefaultValue("IT");
+        builder.Property(c => c.CreatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
+        builder.Property(c => c.UpdatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
 
         builder.HasIndex(c => c.City).HasDatabaseName("idx_cinemas_city");
     }

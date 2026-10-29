@@ -18,6 +18,20 @@ internal static class InMemoryDb
             .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        return new ApplicationDbContext(options);
+        var db = new ApplicationDbContext(options);
+
+        // InMemory doesn't apply column defaults. movies.has_matches is the one required column
+        // with only a database default (a shadow property no test sets), so fill it here.
+        db.SavingChanges += (_, _) =>
+        {
+            foreach (var entry in db.ChangeTracker.Entries<Domain.Entities.Movie>())
+            {
+                var hasMatches = entry.Property("HasMatches");
+                if (entry.State == EntityState.Added && hasMatches.CurrentValue is null)
+                    hasMatches.CurrentValue = "FailedMatch";
+            }
+        };
+
+        return db;
     }
 }

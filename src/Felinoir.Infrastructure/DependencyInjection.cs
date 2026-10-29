@@ -16,11 +16,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = DatabaseUrl.ToNpgsqlConnectionString(configuration["DATABASE_URL"]);
-
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString)
-                   .UseSnakeCaseNamingConvention());
+        services.AddPersistence(configuration);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -36,6 +32,25 @@ public static class DependencyInjection
             new HttpClient(),
             configuration,
             sp.GetRequiredService<ILogger<GeminiClient>>()));
+
+        return services;
+    }
+
+    /// <summary>
+    /// Only the database: the <see cref="ApplicationDbContext"/> on <c>DATABASE_URL</c> and the
+    /// <see cref="DatabaseMigrator"/>. Enough for the migrator, which needs nothing else.
+    /// </summary>
+    public static IServiceCollection AddPersistence(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = DatabaseUrl.ToNpgsqlConnectionString(configuration["DATABASE_URL"]);
+
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(connectionString)
+                   .UseSnakeCaseNamingConvention());
+
+        services.AddScoped<DatabaseMigrator>();
 
         return services;
     }

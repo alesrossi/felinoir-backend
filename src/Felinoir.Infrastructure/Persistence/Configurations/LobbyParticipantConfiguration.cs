@@ -12,13 +12,13 @@ public class LobbyParticipantConfiguration : IEntityTypeConfiguration<LobbyParti
             t.HasCheckConstraint("lobby_participants_name_length",
                 "char_length(name) between 1 and 40"));
 
-        builder.HasKey(p => p.Id);
+        builder.HasKey(p => p.Id).HasName("lobby_participants_pkey");
         builder.Property(p => p.Id).HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(p => p.JoinedAt).HasDefaultValueSql("now()");
 
-        // A unique constraint in the database (nulls allowed many times); also serves
-        // the lookup of a lobby's participants. 23505 on it means "already joined".
+        // Unique, with nulls allowed many times (unclaimed entries); also serves the lookup of a
+        // lobby's participants. 23505 on it means "already joined".
         builder.HasIndex(p => new { p.LobbyId, p.DeviceHash })
             .IsUnique()
             .HasDatabaseName("lobby_participants_one_per_device");

@@ -23,6 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Schema reference for the drift test (tests/schema/dump-reference.sh regenerates it). -->
+    <None Include="..\schema\production.sql" Link="schema\production.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Felinoir.Api\Felinoir.Api.csproj" />
     <ProjectReference Include="..\..\src\Felinoir.Infrastructure\Felinoir.Infrastructure.csproj" />
   </ItemGroup>

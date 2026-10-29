@@ -5,15 +5,19 @@ namespace Felinoir.IntegrationTests.Support;
 /// <summary>Factory helpers for valid entities used across the service tests.</summary>
 internal static class TestData
 {
+    /// <remarks>
+    /// The default title is unique per id: the scrapers' dedup index (idx_movies_unique) rejects
+    /// two movies with the same title and original title, exactly as production does.
+    /// </remarks>
     public static Movie Movie(
         int id,
-        string title = "A Film",
+        string? title = null,
         string? slug = null,
         string createdAt = "2026-01-01T00:00:00Z")
         => new()
         {
             Id = id,
-            Title = title,
+            Title = title ?? $"Film {id}",
             Slug = slug,
             CreatedAt = createdAt,
             UpdatedAt = createdAt,

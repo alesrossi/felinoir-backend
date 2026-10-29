@@ -1,4 +1,4 @@
-using Felinoir.Domain.Entities;
+using Felinoir.Infrastructure.Persistence.ScraperTables;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,7 +17,8 @@ public class AiMatchVerdictConfiguration : IEntityTypeConfiguration<AiMatchVerdi
         });
 
         // The table's unique (scraped_title, scraped_original_title) pair is its identity.
-        builder.HasKey(v => new { v.ScrapedTitle, v.ScrapedOriginalTitle });
+        builder.HasKey(v => new { v.ScrapedTitle, v.ScrapedOriginalTitle })
+            .HasName("ai_match_verdicts_pkey");
 
         builder.Property(v => v.ScrapedOriginalTitle).HasDefaultValue("");
         builder.Property(v => v.RejectedTmdbIds).HasDefaultValueSql("'{}'");

@@ -11,7 +11,7 @@ public class LobbyConfiguration : IEntityTypeConfiguration<Lobby>
         builder.ToTable("lobbies", t =>
             t.HasCheckConstraint("lobbies_note_length", "char_length(note) <= 500"));
 
-        builder.HasKey(l => l.Id);
+        builder.HasKey(l => l.Id).HasName("lobbies_pkey");
         builder.Property(l => l.Id).HasDefaultValueSql("gen_random_uuid()");
 
         // Owned by the bump-version triggers: EF never writes it and reads it back
@@ -33,6 +33,7 @@ public class LobbyConfiguration : IEntityTypeConfiguration<Lobby>
         builder.HasMany(l => l.Participants)
             .WithOne(p => p.Lobby)
             .HasForeignKey(p => p.LobbyId)
+            .HasConstraintName("lobby_participants_lobby_id_fkey")
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

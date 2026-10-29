@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Felinoir.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261018145257_MovieCreditsAndAwards")]
-    partial class MovieCreditsAndAwards
+    [Migration("20261029083355_Baseline")]
+    partial class Baseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,68 +23,8 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Felinoir.Domain.Entities.AiMatchVerdict", b =>
-                {
-                    b.Property<string>("ScrapedTitle")
-                        .HasColumnType("text")
-                        .HasColumnName("scraped_title");
-
-                    b.Property<string>("ScrapedOriginalTitle")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("")
-                        .HasColumnName("scraped_original_title");
-
-                    b.Property<int?>("CheckedTmdbId")
-                        .HasColumnType("integer")
-                        .HasColumnName("checked_tmdb_id");
-
-                    b.Property<string>("Confidence")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("confidence");
-
-                    b.Property<string>("Model")
-                        .HasColumnType("text")
-                        .HasColumnName("model");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text")
-                        .HasColumnName("reason");
-
-                    b.PrimitiveCollection<int[]>("RejectedTmdbIds")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer[]")
-                        .HasColumnName("rejected_tmdb_ids")
-                        .HasDefaultValueSql("'{}'");
-
-                    b.Property<int?>("TmdbId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tmdb_id");
-
-                    b.Property<string>("Verdict")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("verdict");
-
-                    b.Property<string>("VerifiedAt")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("verified_at");
-
-                    b.HasKey("ScrapedTitle", "ScrapedOriginalTitle")
-                        .HasName("pk_ai_match_verdicts");
-
-                    b.ToTable("ai_match_verdicts", null, t =>
-                        {
-                            t.HasCheckConstraint("ai_match_verdicts_confidence_check", "confidence IN ('high', 'low')");
-
-                            t.HasCheckConstraint("ai_match_verdicts_verdict_check", "verdict IN ('match', 'not_a_film', 'unknown')");
-                        });
-                });
 
             modelBuilder.Entity("Felinoir.Domain.Entities.Cinema", b =>
                 {
@@ -114,8 +54,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -129,8 +71,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("Website")
                         .IsRequired()
@@ -138,7 +82,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("website");
 
                     b.HasKey("Id")
-                        .HasName("pk_cinemas");
+                        .HasName("cinemas_pkey");
 
                     b.HasIndex("City")
                         .HasDatabaseName("idx_cinemas_city");
@@ -150,6 +94,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                 {
                     b.Property<int>("Id")
                         .HasColumnType("integer")
+                        .HasDefaultValue(1)
                         .HasColumnName("id");
 
                     b.Property<string>("CacheName")
@@ -159,8 +104,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("ExpiresAt")
                         .IsRequired()
@@ -168,7 +115,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("expires_at");
 
                     b.HasKey("Id")
-                        .HasName("pk_felix_cache");
+                        .HasName("felix_cache_pkey");
 
                     b.ToTable("felix_cache", (string)null);
                 });
@@ -256,7 +203,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id")
-                        .HasName("pk_lobbies");
+                        .HasName("lobbies_pkey");
 
                     b.HasIndex("StartsAt")
                         .HasDatabaseName("lobbies_starts_at_idx");
@@ -295,7 +242,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("pk_lobby_participants");
+                        .HasName("lobby_participants_pkey");
 
                     b.HasIndex("LobbyId", "DeviceHash")
                         .IsUnique()
@@ -314,7 +261,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseSerialColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Actors")
                         .HasColumnType("text")
@@ -324,14 +271,20 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("awards");
 
+                    b.Property<string>("CanonicalTitle")
+                        .HasColumnType("text")
+                        .HasColumnName("canonical_title");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("text")
                         .HasColumnName("content_rating");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("Director")
                         .HasColumnType("text")
@@ -348,6 +301,13 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                     b.Property<string>("Genres")
                         .HasColumnType("text")
                         .HasColumnName("genres");
+
+                    b.Property<string>("HasMatches")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("FailedMatch")
+                        .HasColumnName("has_matches");
 
                     b.Property<string>("ImdbId")
                         .HasColumnType("text")
@@ -450,6 +410,16 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("tmdb_language");
 
+                    b.Property<string>("TmdbLastAttemptAt")
+                        .HasColumnType("text")
+                        .HasColumnName("tmdb_last_attempt_at");
+
+                    b.Property<int>("TmdbMatchAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("tmdb_match_attempts");
+
                     b.Property<string>("TmdbOriginalTitle")
                         .HasColumnType("text")
                         .HasColumnName("tmdb_original_title");
@@ -536,32 +506,49 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("Writer")
                         .HasColumnType("text")
                         .HasColumnName("writer");
 
                     b.HasKey("Id")
-                        .HasName("pk_movies");
+                        .HasName("movies_pkey");
+
+                    b.HasIndex("CanonicalTitle")
+                        .HasDatabaseName("idx_movies_canonical_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("CanonicalTitle"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("CanonicalTitle"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("ExternalId")
+                        .HasDatabaseName("idx_movies_external_id");
 
                     b.HasIndex("ImdbId")
                         .IsUnique()
-                        .HasDatabaseName("ix_movies_imdb_id")
+                        .HasDatabaseName("idx_movies_imdb_id")
                         .HasFilter("imdb_id IS NOT NULL");
 
                     b.HasIndex("Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_movies_slug")
+                        .HasDatabaseName("idx_movies_slug")
                         .HasFilter("slug IS NOT NULL");
+
+                    b.HasIndex("Title")
+                        .HasDatabaseName("idx_movies_title");
 
                     b.HasIndex("TmdbId")
                         .IsUnique()
-                        .HasDatabaseName("ix_movies_tmdb_id")
+                        .HasDatabaseName("idx_movies_tmdb_id")
                         .HasFilter("tmdb_id IS NOT NULL");
 
-                    b.ToTable("movies", (string)null);
+                    b.ToTable("movies", null, t =>
+                        {
+                            t.HasCheckConstraint("movies_has_matches_check", "has_matches IN ('FailedMatch', 'NoMatch', 'FoundMatch')");
+                        });
                 });
 
             modelBuilder.Entity("Felinoir.Domain.Entities.Screening", b =>
@@ -571,7 +558,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseSerialColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BookingUrl")
                         .HasColumnType("text")
@@ -584,8 +571,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("Datetime")
                         .IsRequired()
@@ -597,11 +586,15 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("hall");
 
                     b.Property<bool>("Is3D")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_3d");
 
                     b.Property<bool>("IsOV")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_ov");
 
                     b.Property<string>("Meta")
@@ -618,23 +611,91 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.HasKey("Id")
-                        .HasName("pk_screenings");
+                        .HasName("screenings_pkey");
+
+                    b.HasAlternateKey("CinemaId", "MovieId", "Datetime")
+                        .HasName("screenings_cinema_id_movie_id_datetime_key");
+
+                    b.HasIndex("CinemaId")
+                        .HasDatabaseName("idx_screenings_cinema");
+
+                    b.HasIndex("Datetime")
+                        .HasDatabaseName("idx_screenings_datetime");
 
                     b.HasIndex("MovieId")
-                        .HasDatabaseName("ix_screenings_movie_id");
-
-                    b.HasIndex("CinemaId", "MovieId", "Datetime")
-                        .IsUnique()
-                        .HasDatabaseName("ix_screenings_cinema_id_movie_id_datetime");
+                        .HasDatabaseName("idx_screenings_movie");
 
                     b.ToTable("screenings", (string)null);
                 });
 
-            modelBuilder.Entity("Felinoir.Domain.Entities.TmdbLookupCache", b =>
+            modelBuilder.Entity("Felinoir.Infrastructure.Persistence.ScraperTables.AiMatchVerdict", b =>
+                {
+                    b.Property<string>("ScrapedTitle")
+                        .HasColumnType("text")
+                        .HasColumnName("scraped_title");
+
+                    b.Property<string>("ScrapedOriginalTitle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("")
+                        .HasColumnName("scraped_original_title");
+
+                    b.Property<int?>("CheckedTmdbId")
+                        .HasColumnType("integer")
+                        .HasColumnName("checked_tmdb_id");
+
+                    b.Property<string>("Confidence")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("confidence");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("text")
+                        .HasColumnName("model");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.PrimitiveCollection<int[]>("RejectedTmdbIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("rejected_tmdb_ids")
+                        .HasDefaultValueSql("'{}'");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tmdb_id");
+
+                    b.Property<string>("Verdict")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verdict");
+
+                    b.Property<string>("VerifiedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("ScrapedTitle", "ScrapedOriginalTitle")
+                        .HasName("ai_match_verdicts_pkey");
+
+                    b.ToTable("ai_match_verdicts", null, t =>
+                        {
+                            t.HasCheckConstraint("ai_match_verdicts_confidence_check", "confidence IN ('high', 'low')");
+
+                            t.HasCheckConstraint("ai_match_verdicts_verdict_check", "verdict IN ('match', 'not_a_film', 'unknown')");
+                        });
+                });
+
+            modelBuilder.Entity("Felinoir.Infrastructure.Persistence.ScraperTables.TmdbLookupCache", b =>
                 {
                     b.Property<string>("ScrapedTitle")
                         .HasColumnType("text")
@@ -648,8 +709,10 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("LookedUpAt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("looked_up_at");
+                        .HasColumnName("looked_up_at")
+                        .HasDefaultValueSql("to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')");
 
                     b.Property<string>("ScrapedPosterUrl")
                         .HasColumnType("text")
@@ -660,7 +723,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasColumnName("tmdb_id");
 
                     b.HasKey("ScrapedTitle", "ScrapedOriginalTitle")
-                        .HasName("pk_tmdb_lookup_cache");
+                        .HasName("tmdb_lookup_cache_pkey");
 
                     b.ToTable("tmdb_lookup_cache", (string)null);
                 });
@@ -672,7 +735,7 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasForeignKey("LobbyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_lobby_participants_lobbies_lobby_id");
+                        .HasConstraintName("lobby_participants_lobby_id_fkey");
 
                     b.Navigation("Lobby");
                 });
@@ -684,14 +747,14 @@ namespace Felinoir.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CinemaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_screenings_cinemas_cinema_id");
+                        .HasConstraintName("screenings_cinema_id_fkey");
 
                     b.HasOne("Felinoir.Domain.Entities.Movie", "Movie")
                         .WithMany("Screenings")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_screenings_movies_movie_id");
+                        .HasConstraintName("screenings_movie_id_fkey");
 
                     b.Navigation("Cinema");
 

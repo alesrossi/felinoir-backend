@@ -10,7 +10,9 @@ public class FelixCacheConfiguration : IEntityTypeConfiguration<FelixCache>
     {
         builder.ToTable("felix_cache");
 
-        builder.HasKey(f => f.Id);
-        builder.Property(f => f.Id).ValueGeneratedNever();   // single row, always 1
+        builder.HasKey(f => f.Id).HasName("felix_cache_pkey");
+        builder.Property(f => f.Id).ValueGeneratedNever().HasDefaultValue(1);   // single row, always 1
+
+        builder.Property(f => f.CreatedAt).HasDefaultValueSql(SqlDefaults.UtcNowText);
     }
 }

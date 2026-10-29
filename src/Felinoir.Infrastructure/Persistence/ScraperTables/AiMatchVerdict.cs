@@ -1,6 +1,7 @@
-namespace Felinoir.Domain.Entities;
+namespace Felinoir.Infrastructure.Persistence.ScraperTables;
 
 /// <summary>
+/// Persistence-only: mapped so that EF migrations own its schema (ADR 0001).
 /// What the scraper's AI verification pass (<c>npm run enrich:ai</c>) concluded about a
 /// scraped title. Keyed by (ScrapedTitle, ScrapedOriginalTitle) like
 /// <see cref="TmdbLookupCache"/>, so a verdict outlives the movie row it was reached on.

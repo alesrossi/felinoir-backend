@@ -1,6 +1,7 @@
 using Felinoir.Application.Common.Exceptions;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Entities;
+using Felinoir.Infrastructure.Persistence.ScraperTables;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Reflection;
@@ -45,6 +46,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Trigram matching for the scrapers' title dedup (idx_movies_canonical_trgm).
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(modelBuilder);
     }

@@ -113,6 +113,33 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <summary>The API wired to this database; booted on first use and shared by the collection.</summary>
     public PostgresApiFactory Api => _api ??= new PostgresApiFactory(_connectionString);
 
+    /// <summary>
+    /// Creates an empty database in the same container (dropping any previous one of that name)
+    /// and returns its connection string, for tests that need a schema other than the shared one.
+    /// </summary>
+    public async Task<string> CreateDatabaseAsync(string name)
+    {
+        await using (var conn = new NpgsqlConnection(_connectionString))
+        {
+            await conn.OpenAsync();
+            // Separate commands: CREATE DATABASE can't run inside the implicit transaction of a batch.
+            foreach (var sql in new[] { $"DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)", $"CREATE DATABASE \"{name}\"" })
+            {
+                await using var cmd = new NpgsqlCommand(sql, conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        return new NpgsqlConnectionStringBuilder(_connectionString) { Database = name }.ConnectionString;
+    }
+
+    /// <summary>A context on any database of this container, with the production model wiring.</summary>
+    public static ApplicationDbContext NewDbContext(string connectionString) =>
+        new(new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(connectionString)
+            .UseSnakeCaseNamingConvention()
+            .Options);
+
     /// <summary>A new context per call — mirrors the scoped lifetime services get in the app.</summary>
     public ApplicationDbContext NewDbContext() => new(_options);
 
