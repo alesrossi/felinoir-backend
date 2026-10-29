@@ -28,6 +28,7 @@ public sealed partial class DatabaseMigrator(ApplicationDbContext db, ILogger<Da
     public async Task MigrateAsync(CancellationToken ct = default)
     {
         await AdoptScraperBuiltDatabaseAsync(ct);
+        await CreateHistoryTableAsync(ct);
 
         var pending = (await db.Database.GetPendingMigrationsAsync(ct)).ToList();
         if (pending.Count == 0)
@@ -61,6 +62,15 @@ public sealed partial class DatabaseMigrator(ApplicationDbContext db, ILogger<Da
             history.GetInsertScript(new HistoryRow(BaselineMigration, ProductInfo.GetVersion())), ct);
         await tx.CommitAsync(ct);
     }
+
+    /// <summary>
+    /// Creates the (empty) history table of a new database up front. EF reads it before creating
+    /// it, and on a database without one logs that read as a failed command although the run
+    /// succeeds; a migrator that prints errors on success hides the real ones.
+    /// </summary>
+    private async Task CreateHistoryTableAsync(CancellationToken ct) =>
+        await db.Database.ExecuteSqlRawAsync(
+            db.GetService<IHistoryRepository>().GetCreateIfNotExistsScript(), ct);
 
     private async Task<bool> ExistsAsync(string table, CancellationToken ct) =>
         await db.Database
