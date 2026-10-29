@@ -1,3 +1,5 @@
+using System.Reflection;
+using Felinoir.Infrastructure.Persistence.Migrations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -16,8 +18,12 @@ namespace Felinoir.Infrastructure.Persistence;
 /// </summary>
 public sealed class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMigrator> logger)
 {
-    /// <summary>The migration that reproduces the schema the scrapers had built.</summary>
-    public const string BaselineMigration = "20261029083355_Baseline";
+    /// <summary>
+    /// Id of the migration that reproduces the schema the scrapers had built, read from the
+    /// migration's own <see cref="MigrationAttribute"/> so the two can't disagree.
+    /// </summary>
+    public static readonly string BaselineMigration =
+        typeof(Baseline).GetCustomAttribute<MigrationAttribute>()!.Id;
 
     public async Task MigrateAsync(CancellationToken ct = default)
     {
