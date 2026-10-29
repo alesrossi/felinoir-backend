@@ -220,7 +220,19 @@ As built (details below are the original plan, which held):
   - DI validation is on (`ValidateScopes` and `ValidateOnBuild`), so captive dependencies fail
     at startup.
 
-## Step 4 — Catalogue slices (Movies, Cinemas, Screenings)
+## Step 4 — Catalogue slices (Movies, Cinemas, Screenings) — done 2026-10-29
+
+As built: six queries under `Application/Features/{Movies,Cinemas,Screenings}`, each response
+record with one `Projection` expression (translated in `Select`, and compiled for entities loaded
+with `Include` when `withRelations` is set). JSON is byte-identical; 404/400 became problem
+responses keeping their old `error` values (`"Not found"`, `"Invalid id"`, in `CatalogueErrors`).
+
+**Deviation:** `Screening.Datetime` stays a `string` in the entity rather than being mapped to
+`ScreeningTime` with an EF value converter. A converter would make one malformed scraper row fail
+whole queries, and it would rewrite the 73 Troisi rows stored without seconds when returned
+(`…T16:15` → `…T16:15:00`). `ScreeningTime` keeps being used where times are parsed or compared.
+Revisit once the Troisi scraper fix and its normalising migration are in (see `alignment.md`).
+
 
 - One query plus handler per use case under `Features/<Area>/<UseCase>/`: `GetMovies`,
   `GetMovieById`, `GetMovieBySlug`, `GetCinemas`, `GetCinemaById`, `GetScreenings`.

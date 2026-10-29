@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-29, after rework step 3.
+**Last updated:** 2026-10-29, after rework step 4.
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -28,6 +28,7 @@ Legend: **Required** = the release breaks without it · **Check** = verify while
 | 2 | The backend no longer ships or reads `cinemas.yml`; open-air comes from the database | scrapers, server |
 | 3 | Error responses are RFC 7807 `application/problem+json` keeping the `error` member, plus `traceId`; empty framework errors (malformed JSON, unknown route, bad query parameter) now have a body | frontend |
 | 3 | Every response has `X-Trace-Id` (exposed by CORS); an incoming W3C `traceparent` is continued | frontend |
+| 4 | `/movies/{id}`, `/movies/slug/{slug}`, `/cinemas/{id}`: 404 and 400 are problem responses; `error` keeps its old values (`"Not found"`, `"Invalid id"`); success bodies unchanged | frontend |
 | 3 | Logs: Elastic Common Schema JSON on stdout (Production), configurable through `Serilog__…` variables; tracing exported over OTLP when configured | server |
 
 ---
@@ -86,7 +87,9 @@ works with problem responses.
 - [ ] Cinema `city` is `"Roma"` for every cinema. `ApiCinema.city` is only typed, not displayed
       (2026-10-29); re-check if a page starts showing it.
 - [ ] Error paths still render the right message: Felix (`data.error` is still the Italian text), lobby
-      errors (`name_taken`, `already_joined`, `not_found`, …), 404 pages.
+      errors (`name_taken`, `already_joined`, `not_found`, …), 404 pages. Movie and cinema lookups
+      (`getMovieById`, `getMovieBySlug`, cinema pages) only look at `res.ok`, so their 404 becoming a
+      problem response changes nothing (checked 2026-10-29 in `src/lib/api/client.ts`).
 - [ ] `?from=` uses `romeWallClockKey` (`YYYY-MM-DDTHH:MM`, Rome time, no offset): unchanged
       behaviour. Only a Troisi screening starting in exactly the current minute is now excluded
       (its stored time has no seconds).
