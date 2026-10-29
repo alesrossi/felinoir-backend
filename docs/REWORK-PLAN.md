@@ -12,6 +12,8 @@ Related documents:
 - `docs/adr/0002-clean-architecture-with-cqrs-slices.md`
 - `docs/SCRAPERS-SCHEMA-MIGRATION.md` — what changes in the scrapers repo, and the production
   cutover.
+- `alignment.md` — what the scrapers, the frontend and the server must change or check, kept up to
+  date at every step.
 
 ---
 
