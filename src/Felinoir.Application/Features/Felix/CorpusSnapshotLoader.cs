@@ -2,7 +2,7 @@ using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>Loads the <see cref="CorpusSnapshot"/> of one city, as of now.</summary>
 public sealed class CorpusSnapshotLoader(IReadDbContext db, TimeProvider time)

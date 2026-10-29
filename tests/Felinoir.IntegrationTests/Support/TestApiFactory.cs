@@ -1,4 +1,4 @@
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,20 +33,26 @@ public sealed class TestApiFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IFelixService>();
-            services.AddScoped<IFelixService, UnconfiguredFelix>();
+            services.RemoveAll<IGeminiClient>();
+            services.AddSingleton<IGeminiClient, UnconfiguredGemini>();
 
             // No database here: the lobby cleanup would only log connection failures.
             services.RemoveHostedService<ExpiredLobbyCleanupService>();
         });
     }
 
-    private sealed class UnconfiguredFelix : IFelixService
+    private sealed class UnconfiguredGemini : IGeminiClient
     {
         public bool IsConfigured => false;
 
-        public Task<string> GenerateAsync(
-            IReadOnlyList<ChatMessage> messages, string? filterContext = null, CancellationToken ct = default) =>
-            throw new InvalidOperationException("Felix is intentionally unconfigured in tests.");
+        private static InvalidOperationException Unused() => new("Gemini is intentionally unconfigured in tests.");
+
+        public Task<GeminiCacheRef?> CreateCacheAsync(string corpus, CancellationToken ct = default) => throw Unused();
+
+        public Task<string?> GenerateWithCacheAsync(
+            IReadOnlyList<ChatTurn> turns, string cacheName, CancellationToken ct = default) => throw Unused();
+
+        public Task<string> GenerateInlineAsync(
+            IReadOnlyList<ChatTurn> turns, string corpus, CancellationToken ct = default) => throw Unused();
     }
 }

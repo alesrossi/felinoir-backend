@@ -1,4 +1,4 @@
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Application.Features.Lobbies;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,9 +19,9 @@ public static class DependencyInjection
         // pipeline) is registered by the host, where its source generator runs.
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, ServiceLifetime.Scoped);
 
-        // Felix readiness state is process-wide; the service that uses it is per-request.
-        services.AddSingleton<FelixState>();
-        services.AddScoped<IFelixService, FelixService>();
+        // Each city's Felix context is process-wide; the handler that uses it is per-request.
+        services.AddSingleton<FelixContextRegistry>();
+        services.AddOptions<FelixOptions>();
 
         return services;
     }

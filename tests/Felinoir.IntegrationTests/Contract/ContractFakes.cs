@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text;
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 
 namespace Felinoir.IntegrationTests.Contract;
 
@@ -36,19 +36,19 @@ internal sealed class RecordingGeminiClient : IGeminiClient
     }
 
     public Task<string?> GenerateWithCacheAsync(
-        IReadOnlyList<ChatMessage> messages, string cacheName, CancellationToken ct = default)
+        IReadOnlyList<ChatTurn> turns, string cacheName, CancellationToken ct = default)
     {
         _log.AppendLine(CultureInfo.InvariantCulture, $"GenerateWithCache({cacheName})");
-        AppendMessages(messages);
-        return Task.FromResult<string?>(Reply(messages));
+        AppendMessages(turns);
+        return Task.FromResult<string?>(Reply(turns));
     }
 
     public Task<string> GenerateInlineAsync(
-        IReadOnlyList<ChatMessage> messages, string corpus, CancellationToken ct = default)
+        IReadOnlyList<ChatTurn> turns, string corpus, CancellationToken ct = default)
     {
         _log.AppendLine(CultureInfo.InvariantCulture, $"GenerateInline(corpus: {corpus.Length} chars)");
-        AppendMessages(messages);
-        return Task.FromResult(Reply(messages));
+        AppendMessages(turns);
+        return Task.FromResult(Reply(turns));
     }
 
     /// <summary>Returns the calls recorded since the last call to this method.</summary>
@@ -59,14 +59,17 @@ internal sealed class RecordingGeminiClient : IGeminiClient
         return text;
     }
 
-    private void AppendMessages(IReadOnlyList<ChatMessage> messages)
+    private void AppendMessages(IReadOnlyList<ChatTurn> turns)
     {
-        foreach (var m in messages)
-            _log.AppendLine(CultureInfo.InvariantCulture, $"  [{m.Role}] {m.Content.Replace("\n", "\n    ")}");
+        foreach (var t in turns)
+        {
+            var role = t.Speaker == Speaker.User ? "user" : "assistant";
+            _log.AppendLine(CultureInfo.InvariantCulture, $"  [{role}] {t.Content.Replace("\n", "\n    ")}");
+        }
     }
 
-    private static string Reply(IReadOnlyList<ChatMessage> messages) =>
-        messages.Any(m => m.Content == FailTrigger)
+    private static string Reply(IReadOnlyList<ChatTurn> turns) =>
+        turns.Any(t => t.Content == FailTrigger)
             ? throw new HttpRequestException("Gemini exploded")
-            : $"Risposta di Felix al messaggio {messages.Count}.";
+            : $"Risposta di Felix al messaggio {turns.Count}.";
 }

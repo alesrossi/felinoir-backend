@@ -76,17 +76,6 @@ public class ProblemResponseTests(ProblemResponseTests.Factory factory) : IClass
         Assert.Equal("bad_request", body.GetProperty("error").GetString());
     }
 
-    [Fact]
-    public async Task A_response_with_its_own_body_is_left_alone()
-    {
-        // An endpoint that still writes its own { "error": ... } body (Felix, until step 6).
-        var res = await _client.PostAsJsonAsync("/felix/chat", new { });
-
-        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
-        Assert.Equal("application/json", res.Content.Headers.ContentType?.MediaType);
-        Assert.Equal("""{"error":"Richiesta non valida."}""", await res.Content.ReadAsStringAsync());
-    }
-
     private static string Single(HttpResponseMessage res, string header) =>
         Assert.Single(res.Headers.GetValues(header));
 

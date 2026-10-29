@@ -1,4 +1,4 @@
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>Loads a city's <see cref="CorpusSnapshot"/> and renders it.</summary>
 public sealed class CorpusBuilder(CorpusSnapshotLoader loader) : ICorpusBuilder

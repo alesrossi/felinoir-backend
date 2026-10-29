@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>
 /// Renders active UI filters as the plain-text block described in SPEC.md, appended to

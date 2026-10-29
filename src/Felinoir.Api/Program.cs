@@ -5,6 +5,7 @@ using Felinoir.Api.Errors;
 using Felinoir.Api.Observability;
 using Felinoir.Application;
 using Felinoir.Application.Common.Behaviors;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Infrastructure;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -33,6 +34,7 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.Configure<FelixOptions>(builder.Configuration.GetSection(FelixOptions.Section));
 
 // Handlers are found at compile time by the source generator. Scoped, because handlers use the
 // request's DbContext. The behaviours run in this order around every handler (rework plan, step 3).

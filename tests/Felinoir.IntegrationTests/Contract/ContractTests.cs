@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Infrastructure.Persistence;
 using Felinoir.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
@@ -176,6 +176,11 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
         await r.SendAsync(HttpMethod.Post, "/felix/chat",
             new { messages = new[] { new { role = "user", content = RecordingGeminiClient.FailTrigger } } },
             label: "Gemini fails");
+        r.Note("Gemini calls", _gemini.TakeLog());
+
+        await r.SendAsync(HttpMethod.Post, "/felix/chat?city=rome", new { messages = hello }, label: "city id");
+        r.Note("Gemini calls", _gemini.TakeLog());
+        await r.SendAsync(HttpMethod.Post, "/felix/chat?city=Torino", new { messages = hello }, label: "unknown city");
         r.Note("Gemini calls", _gemini.TakeLog());
 
         _gemini.IsConfigured = false;

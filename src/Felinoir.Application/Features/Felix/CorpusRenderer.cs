@@ -3,7 +3,7 @@ using System.Text.Json;
 using Felinoir.Domain.Entities;
 using Felinoir.Domain.ValueObjects;
 
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>
 /// Everything a city's Felix corpus is made from: the city's name, the time it is built at, the

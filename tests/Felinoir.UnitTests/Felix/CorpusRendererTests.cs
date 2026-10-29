@@ -1,4 +1,4 @@
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Domain.Entities;
 using Felinoir.Domain.ValueObjects;
 

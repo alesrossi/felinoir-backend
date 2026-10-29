@@ -1,13 +1,12 @@
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Application.Features.Lobbies;
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Felinoir.Infrastructure.Configuration;
 using Felinoir.Infrastructure.Felix;
 using Felinoir.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Felinoir.Infrastructure;
 
@@ -28,11 +27,20 @@ public static class DependencyInjection
         // No pg_cron on the server, so expired lobbies are deleted from here.
         services.AddHostedService<ExpiredLobbyCleanupService>();
 
-        // One long-lived HttpClient for Gemini, kept private to the client.
-        services.AddSingleton<IGeminiClient>(sp => new GeminiClient(
-            new HttpClient(),
-            configuration,
-            sp.GetRequiredService<ILogger<GeminiClient>>()));
+        services.AddScoped<IFelixContextStore, FelixContextStore>();
+
+        // A typed client: the factory pools and recycles handlers (so DNS changes are picked up),
+        // and the standard resilience pipeline adds timeouts, retries with jitter on transient
+        // failures (5xx, 408, 429) and a circuit breaker. Transient, so never held by a singleton.
+        services.AddHttpClient<IGeminiClient, GeminiClient>()
+            .AddStandardResilienceHandler(options =>
+            {
+                // Generating up to 700 tokens, or uploading the corpus, can take a while.
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(75);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+                options.Retry.MaxRetryAttempts = 2;
+            });
 
         return services;
     }

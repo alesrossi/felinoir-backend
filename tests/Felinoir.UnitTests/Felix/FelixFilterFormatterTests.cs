@@ -1,5 +1,5 @@
 using System.Globalization;
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 
 namespace Felinoir.UnitTests.Felix;
 

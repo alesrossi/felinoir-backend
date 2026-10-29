@@ -1,4 +1,4 @@
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>
 /// Builds the Felix knowledge corpus of one city: a Markdown document listing every film

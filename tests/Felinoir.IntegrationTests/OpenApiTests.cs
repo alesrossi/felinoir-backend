@@ -26,7 +26,7 @@ public class OpenApiTests : IClassFixture<TestApiFactory>
             Assert.Contains($"\"{path}\"", json);
 
         // Schemas for the documented response/request types are emitted too.
-        Assert.Contains("ErrorResponse", json);
+        Assert.Contains("ProblemDetails", json);
         Assert.Contains("FelixChatRequest", json);
     }
 

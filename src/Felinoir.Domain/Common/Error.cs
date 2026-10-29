@@ -17,6 +17,9 @@ public enum ErrorKind
 
     /// <summary>A dependency the request needs isn't available (503).</summary>
     Unavailable,
+
+    /// <summary>Something failed that the caller can only retry later (500), reported with a message rather than thrown.</summary>
+    Unexpected,
 }
 
 /// <summary>

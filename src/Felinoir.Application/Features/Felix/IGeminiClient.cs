@@ -1,9 +1,9 @@
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>
 /// Low-level Gemini REST operations used by Felix. Implementations own the HTTP details,
 /// the model/endpoint, and the system prompt; orchestration (caching, fallback) lives in
-/// <see cref="IFelixService"/>.
+/// <see cref="AskFelixHandler"/>.
 /// </summary>
 public interface IGeminiClient
 {
@@ -21,11 +21,11 @@ public interface IGeminiClient
     /// expired (HTTP 404) so the caller can fall back to inline context; throws on other errors.
     /// </summary>
     Task<string?> GenerateWithCacheAsync(
-        IReadOnlyList<ChatMessage> messages, string cacheName, CancellationToken ct = default);
+        IReadOnlyList<ChatTurn> turns, string cacheName, CancellationToken ct = default);
 
     /// <summary>Generates a reply with the corpus passed inline as context on this request.</summary>
     Task<string> GenerateInlineAsync(
-        IReadOnlyList<ChatMessage> messages, string corpus, CancellationToken ct = default);
+        IReadOnlyList<ChatTurn> turns, string corpus, CancellationToken ct = default);
 }
 
 /// <summary>A Gemini context-cache reference. <see cref="Name"/> looks like "cachedContents/abc123".</summary>

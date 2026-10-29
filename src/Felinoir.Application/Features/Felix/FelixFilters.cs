@@ -1,4 +1,4 @@
-namespace Felinoir.Application.Felix;
+namespace Felinoir.Application.Features.Felix;
 
 /// <summary>
 /// Active UI filters from felinoir.it, sent alongside a chat message. Formatted into a

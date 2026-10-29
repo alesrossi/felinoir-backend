@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Felinoir.Application.Felix;
+using Felinoir.Application.Features.Felix;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -22,12 +22,14 @@ public sealed partial class GeminiClient : IGeminiClient
 
     private readonly HttpClient _http;
     private readonly ILogger<GeminiClient> _logger;
+    private readonly TimeProvider _time;
     private readonly string? _apiKey;
 
-    public GeminiClient(HttpClient http, IConfiguration configuration, ILogger<GeminiClient> logger)
+    public GeminiClient(HttpClient http, IConfiguration configuration, ILogger<GeminiClient> logger, TimeProvider time)
     {
         _http = http;
         _logger = logger;
+        _time = time;
         _apiKey = configuration["GEMINI_API_KEY"];
     }
 
@@ -62,12 +64,12 @@ public sealed partial class GeminiClient : IGeminiClient
     }
 
     public async Task<string?> GenerateWithCacheAsync(
-        IReadOnlyList<ChatMessage> messages, string cacheName, CancellationToken ct = default)
+        IReadOnlyList<ChatTurn> turns, string cacheName, CancellationToken ct = default)
     {
         var body = new
         {
             cachedContent = cacheName,
-            contents = ToGeminiContents(messages),
+            contents = ToGeminiContents(turns),
             generationConfig = GenerationConfig,
         };
 
@@ -80,14 +82,14 @@ public sealed partial class GeminiClient : IGeminiClient
     }
 
     public async Task<string> GenerateInlineAsync(
-        IReadOnlyList<ChatMessage> messages, string corpus, CancellationToken ct = default)
+        IReadOnlyList<ChatTurn> turns, string corpus, CancellationToken ct = default)
     {
         var contents = new List<object>
         {
             new { role = "user", parts = new[] { new { text = corpus } } },
             new { role = "model", parts = new[] { new { text = "Capito, sono pronto." } } },
         };
-        contents.AddRange(ToGeminiContents(messages));
+        contents.AddRange(ToGeminiContents(turns));
 
         var body = new
         {
@@ -119,11 +121,11 @@ public sealed partial class GeminiClient : IGeminiClient
         throw new HttpRequestException($"Gemini generateContent failed: {(int)res.StatusCode} {body}");
     }
 
-    private static object[] ToGeminiContents(IReadOnlyList<ChatMessage> messages) =>
-        messages.Select(m => (object)new
+    private static object[] ToGeminiContents(IReadOnlyList<ChatTurn> turns) =>
+        turns.Select(t => (object)new
         {
-            role = m.Role == "assistant" ? "model" : "user",
-            parts = new[] { new { text = m.Content } },
+            role = t.Speaker == Speaker.Assistant ? "model" : "user",
+            parts = new[] { new { text = t.Content } },
         }).ToArray();
 
     /// <summary>Pulls <c>candidates[0].content.parts[0].text</c>, returning "" if absent.</summary>
@@ -146,9 +148,9 @@ public sealed partial class GeminiClient : IGeminiClient
     private string ApiKey() =>
         IsConfigured ? _apiKey! : throw new InvalidOperationException("GEMINI_API_KEY is not set");
 
-    private static string SystemPrompt()
+    private string SystemPrompt()
     {
-        var today = DateTime.UtcNow.ToString("dddd d MMMM yyyy", Italian);
+        var today = _time.GetUtcNow().UtcDateTime.ToString("dddd d MMMM yyyy", Italian);
         return $"""
             You are Felix, the cinema assistant for felinoir.it, a website listing films showing in Rome, Italy.
             You have access to a complete, up-to-date list of films and their screenings in Rome.

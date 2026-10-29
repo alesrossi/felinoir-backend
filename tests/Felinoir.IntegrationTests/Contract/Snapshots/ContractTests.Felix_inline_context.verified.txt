@@ -1,33 +1,53 @@
 ﻿### POST /felix/chat   (no messages)
 > {}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Richiesta non valida."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A conversation has at least one message.",
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
 }
 
 ### POST /felix/chat
 > {"messages":[]}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Richiesta non valida."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A conversation has at least one message.",
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
 }
 
 ### POST /felix/chat
 > {"messages":[{"role":"system","content":"hi"}]}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Richiesta non valida."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Every message has a role, \"user\" or \"assistant\", and some content.",
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
 }
 
 ### POST /felix/chat
 > {"messages":[{"role":"user","content":""}]}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Richiesta non valida."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Every message has a role, \"user\" or \"assistant\", and some content.",
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
 }
 
 ### POST /felix/chat   (malformed body)
@@ -117,28 +137,68 @@ GenerateInline(corpus: 641 chars)
 ### POST /felix/chat   (Gemini fails)
 > {"messages":[{"role":"user","content":"<fail>"}]}
 500 InternalServerError
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Qualcosa è andato storto. Riprova tra qualche secondo."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+  "title": "An error occurred while processing your request.",
+  "status": 500,
+  "error": "Qualcosa è andato storto. Riprova tra qualche secondo.",
+  "traceId": "TraceId"
 }
 
 --- Gemini calls
 GenerateInline(corpus: 641 chars)
   [user] <fail>
 
+### POST /felix/chat?city=rome   (city id)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 1."
+}
+
+--- Gemini calls
+GenerateInline(corpus: 641 chars)
+  [user] Cosa c'è stasera?
+
+### POST /felix/chat?city=Torino   (unknown city)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+400 BadRequest
+Content-Type: application/problem+json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
+}
+
+--- Gemini calls
+(no Gemini calls)
+
 ### POST /felix/chat   (no API key)
 > {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
 503 ServiceUnavailable
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Felix non è configurato al momento."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+  "title": "Service Unavailable",
+  "status": 503,
+  "error": "Felix non è configurato al momento.",
+  "traceId": "TraceId"
 }
 
 ### POST /felix/chat   (no API key, invalid body)
 > {}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "Richiesta non valida."
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A conversation has at least one message.",
+  "error": "Richiesta non valida.",
+  "traceId": "TraceId"
 }
 

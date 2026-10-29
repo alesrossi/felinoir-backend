@@ -16,6 +16,7 @@ public static class ErrorResults
         ErrorKind.Conflict => StatusCodes.Status409Conflict,
         ErrorKind.Unprocessable => StatusCodes.Status422UnprocessableEntity,
         ErrorKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
+        ErrorKind.Unexpected => StatusCodes.Status500InternalServerError,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
