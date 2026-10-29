@@ -10,11 +10,13 @@ using System.Reflection;
 namespace Felinoir.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core context mapped onto the pre-existing Postgres schema (see SPEC.md).
-/// snake_case column/table naming is applied via UseSnakeCaseNamingConvention()
-/// in DI; per-property exceptions live in the IEntityTypeConfiguration classes.
+/// The EF Core context, whose model and migrations own the database schema (ADR 0001). One per
+/// request, behind both sides of ADR 0002: <see cref="IReadDbContext"/> (untracked queries) and
+/// <see cref="IUnitOfWork"/> (committing what repositories loaded and changed). snake_case naming
+/// comes from UseSnakeCaseNamingConvention(); per-property mappings live in the
+/// IEntityTypeConfiguration classes.
 /// </summary>
-public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWork, IReadDbContext
+public class ApplicationDbContext : DbContext, IUnitOfWork, IReadDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)

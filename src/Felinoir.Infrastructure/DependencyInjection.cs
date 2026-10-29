@@ -19,7 +19,6 @@ public static class DependencyInjection
         services.AddPersistence(configuration);
 
         // One context per request behind every persistence abstraction.
-        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IReadDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ILobbyRepository, LobbyRepository>();
