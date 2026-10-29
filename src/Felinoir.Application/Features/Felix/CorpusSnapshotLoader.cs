@@ -30,6 +30,8 @@ public sealed class CorpusSnapshotLoader(IReadDbContext db, TimeProvider time)
         var screenings = await db.Screenings
             .Where(s => s.Cinema!.CityId == cityId && string.Compare(s.Datetime, nowText) >= 0)
 #pragma warning restore CA1309
+            .OrderBy(s => s.Datetime)
+            .ThenBy(s => s.Id)
             .Take(ScreeningLimit)
             .ToListAsync(cancellationToken);
 
