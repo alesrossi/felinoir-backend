@@ -94,3 +94,6 @@ out/
 .env
 .env.*
 !.env.example
+
+# Verify snapshot test output
+*.received.*

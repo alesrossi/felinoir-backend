@@ -1,0 +1,7 @@
+﻿### GET /health
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "ok": true
+}
+

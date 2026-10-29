@@ -108,6 +108,8 @@ public sealed class PostgresFixture : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
+    public string ConnectionString => _connectionString;
+
     /// <summary>The API wired to this database; booted on first use and shared by the collection.</summary>
     public PostgresApiFactory Api => _api ??= new PostgresApiFactory(_connectionString);
 

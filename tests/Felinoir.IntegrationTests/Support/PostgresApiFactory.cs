@@ -16,8 +16,14 @@ namespace Felinoir.IntegrationTests.Support;
 /// <c>DATABASE_URL</c> gets the same parseable dummy as <see cref="TestApiFactory"/> (Program
 /// reads it at startup); the DbContext registration is then replaced with one pointing at the
 /// container. The hourly lobby cleanup is removed so it can't delete rows a test just seeded.
+/// <paramref name="configureServices"/> runs last, for tests that swap further services, and
+/// <paramref name="environment"/> overrides the host environment (Development by default).
 /// </summary>
-public sealed class PostgresApiFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class PostgresApiFactory(
+    string connectionString,
+    Action<IServiceCollection>? configureServices = null,
+    string? environment = null)
+    : WebApplicationFactory<Program>
 {
     static PostgresApiFactory()
     {
@@ -27,6 +33,8 @@ public sealed class PostgresApiFactory(string connectionString) : WebApplication
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        if (environment is not null) builder.UseEnvironment(environment);
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
@@ -35,6 +43,8 @@ public sealed class PostgresApiFactory(string connectionString) : WebApplication
                 options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
 
             services.RemoveHostedService<ExpiredLobbyCleanupService>();
+
+            configureServices?.Invoke(services);
         });
     }
 }

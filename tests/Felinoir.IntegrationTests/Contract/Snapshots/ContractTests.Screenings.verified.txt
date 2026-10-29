@@ -1,0 +1,503 @@
+﻿### GET /screenings
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?cinemaId=cinema-adriano
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?movieId=1
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?city=Roma
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?city=Velletri
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?city=Milano
+200 OK
+Content-Type: application/json; charset=utf-8
+[]
+
+### GET /screenings?from=2099-06-02T00:00:00
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?to=2099-06-01T23:59:59
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?from=2099-06-01T00:00:00&to=2099-06-02T23:59:59&cinemaId=cinema-adriano
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?withRelations=true&cinemaId=san-cosimato
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z",
+    "movie": {
+      "id": 1,
+      "title": "Dune - Parte due",
+      "originalTitle": "Dune: Part Two",
+      "director": "Denis Villeneuve",
+      "durationMinutes": 166,
+      "genres": "Fantascienza, Avventura",
+      "synopsis": "Paul Atreides si unisce ai Fremen.",
+      "posterUrl": "https://scraped.example/dune.jpg",
+      "trailerUrl": "https://scraped.example/dune-trailer",
+      "externalId": "nvr-123",
+      "rating": "T",
+      "slug": "dune-parte-due",
+      "tmdbId": 693134,
+      "imdbId": "tt15239678",
+      "tmdbRating": "8.1",
+      "tmdbVotes": "6500",
+      "tmdbTitle": "Dune - Parte due",
+      "tmdbTitleEn": "Dune: Part Two",
+      "tmdbOriginalTitle": "Dune: Part Two",
+      "tmdbPlot": "Paul Atreides si unisce a Chani e ai Fremen.",
+      "tmdbPlotEn": "Paul Atreides unites with Chani and the Fremen.",
+      "tmdbGenre": "Fantascienza",
+      "tmdbGenreEn": "Science Fiction",
+      "tmdbLanguage": "en",
+      "tmdbCountry": "US",
+      "tmdbPosterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+      "tmdbTrailerUrlIt": "https://youtube.com/watch?v=it",
+      "tmdbTrailerUrlEn": "https://youtube.com/watch?v=en",
+      "tmdbPopularity": "512.3",
+      "tmdbStatus": "Released",
+      "tmdbTagline": "Long live the fighters.",
+      "tmdbBudget": 190000000,
+      "tmdbRevenue": 714444358,
+      "tmdbHomepage": "https://dune.example",
+      "tmdbCollection": "{\"id\":726871,\"name\":\"Dune Collection\"}",
+      "tmdbProductionCompanies": "[{\"id\":923,\"name\":\"Legendary Pictures\"}]",
+      "tmdbProductionCountries": "[{\"iso_3166_1\":\"US\",\"name\":\"United States of America\"}]",
+      "tmdbSpokenLanguages": "[{\"iso_639_1\":\"en\",\"name\":\"English\"}]",
+      "tmdbBackdrops": "[\"https://image.tmdb.org/t/p/w1280/b1.jpg\"]",
+      "tmdbVideos": "[{\"key\":\"abc\",\"site\":\"YouTube\"}]",
+      "tmdbKeywords": "[\"desert\",\"prophecy\",\"sandworm\"]",
+      "tmdbRecommendations": "[{\"id\":438631,\"title\":\"Dune\"}]",
+      "tmdbWatchProviders": "{\"IT\":{\"flatrate\":[\"Netflix\"]}}",
+      "tmdbCredits": "{\"cast\":[{\"name\":\"Timothée Chalamet\",\"character\":\"Paul Atreides\"}],\"crew\":[{\"name\":\"Denis Villeneuve\",\"job\":\"Director\"}]}",
+      "tmdbEnrichedAt": "2026-03-02T03:00:00Z",
+      "contentRating": "PG-13",
+      "writer": "Denis Villeneuve, Jon Spaihts",
+      "actors": "Timothée Chalamet, Zendaya",
+      "released": "2024-02-28",
+      "imdbRating": "8.5",
+      "imdbVotes": "620,000",
+      "rtRating": "92%",
+      "metacriticScore": "79",
+      "awards": "Won 2 Oscars.",
+      "omdbEnrichedAt": "2026-03-02T04:00:00Z",
+      "createdAt": "2026-03-01T09:00:00Z",
+      "updatedAt": "2026-03-01T09:00:00Z"
+    },
+    "cinema": {
+      "id": "san-cosimato",
+      "name": "Piazza San Cosimato",
+      "city": "Roma",
+      "country": "IT",
+      "website": "https://san-cosimato.example.com",
+      "scheduleUrl": "https://san-cosimato.example.com/schedule",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    }
+  }
+]
+
+### GET /screenings?withRelations=false&movieId=2
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?limit=2&offset=1
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /screenings?limit=-5   (clamped to 0)
+200 OK
+Content-Type: application/json; charset=utf-8
+[]
+
+### GET /screenings?offset=-3   (clamped to 0)
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 5,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2020-01-01T20:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "movieId": 3,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T09:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 1,
+    "movieId": 1,
+    "cinemaId": "cinema-adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "hall": "Sala 1",
+    "is3D": false,
+    "isOV": true,
+    "subtitleLanguage": "it",
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1",
+    "meta": "{\"price\":\"8.50\",\"source\":\"nvr\"}",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "movieId": 1,
+    "cinemaId": "san-cosimato",
+    "datetime": "2099-06-02T21:30:00",
+    "is3D": true,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "movieId": 2,
+    "cinemaId": "multiplex-augustus",
+    "datetime": "2099-06-03T18:00:00",
+    "is3D": false,
+    "isOV": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+

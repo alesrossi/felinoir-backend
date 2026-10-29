@@ -1,0 +1,372 @@
+﻿### POST /lobbies   (no device token)
+> {"screeningId":1,"name":"Ale"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "missing_device"
+}
+
+### POST /lobbies   (empty device token)
+> {"screeningId":1,"name":"Ale"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "missing_device"
+}
+
+### POST /lobbies   (empty body)
+> {}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":""}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":"   "}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies   (40 chars is valid)
+> {"screeningId":1,"name":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+201 Created
+Content-Type: application/json; charset=utf-8
+Location: /lobbies/Guid_1
+{
+  "id": "Guid_1",
+  "version": 2,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":"Al\te"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":"Ale","note":"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_note"
+}
+
+### POST /lobbies
+> {"screeningId":999,"name":"Ale"}
+422 UnprocessableEntity
+Content-Type: application/json; charset=utf-8
+{
+  "error": "screening_not_found"
+}
+
+### POST /lobbies   (no screening id)
+> {"name":"Ale"}
+422 UnprocessableEntity
+Content-Type: application/json; charset=utf-8
+{
+  "error": "screening_not_found"
+}
+
+### POST /lobbies   (already started)
+> {"screeningId":4,"name":"Ale"}
+422 UnprocessableEntity
+Content-Type: application/json; charset=utf-8
+{
+  "error": "screening_past"
+}
+
+### POST /lobbies   (long past)
+> {"screeningId":5,"name":"Ale"}
+422 UnprocessableEntity
+Content-Type: application/json; charset=utf-8
+{
+  "error": "screening_past"
+}
+
+### GET /lobbies/not-a-guid
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### GET /lobbies/Guid_3
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### GET /lobbies/Guid_3   (unknown lobby, no device)
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "missing_device"
+}
+
+### POST /lobbies
+> {"screeningId":1,"name":"Ale"}
+201 Created
+Content-Type: application/json; charset=utf-8
+Location: /lobbies/Guid_4
+{
+  "id": "Guid_4",
+  "version": 2,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_5",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_5",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies/Guid_4/participants   (same device again)
+> {"name":"Altro"}
+409 Conflict
+Content-Type: application/json; charset=utf-8
+{
+  "error": "already_joined"
+}
+
+### POST /lobbies/Guid_4/participants   (name taken, any case)
+> {"name":"ALE"}
+409 Conflict
+Content-Type: application/json; charset=utf-8
+{
+  "error": "name_taken"
+}
+
+### POST /lobbies/Guid_4/participants
+> {"name":""}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies/Guid_4/participants   (no name)
+> {}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### POST /lobbies/Guid_4/participants
+> {"name":"Giulia"}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_4",
+  "version": 3,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_5",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_6",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_6",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### PATCH /lobbies/Guid_4/participants/Guid_6   (rename onto a taken name)
+> {"name":"ale"}
+409 Conflict
+Content-Type: application/json; charset=utf-8
+{
+  "error": "name_taken"
+}
+
+### PATCH /lobbies/Guid_4/participants/Guid_6
+> {"name":""}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_name"
+}
+
+### PATCH /lobbies/Guid_4/participants/Guid_7
+> {"name":"X"}
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### PATCH /lobbies/Guid_4/participants/not-a-guid
+> {"name":"X"}
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### DELETE /lobbies/Guid_4/participants/Guid_7
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### POST /lobbies/Guid_4/participants/Guid_7/claim
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### PATCH /lobbies/Guid_4
+> {"note":"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_note"
+}
+
+### PATCH /lobbies/Guid_4   (no note)
+> {}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "invalid_note"
+}
+
+### PATCH /lobbies/Guid_4   (500 chars is valid)
+> {"note":"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_4",
+  "version": 4,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+  "participants": [
+    {
+      "id": "Guid_5",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_6",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_6",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### DELETE /lobbies/Guid_4/participants/Guid_5   (no device)
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "missing_device"
+}
+

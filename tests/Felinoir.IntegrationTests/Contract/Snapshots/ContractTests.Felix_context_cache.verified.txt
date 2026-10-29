@@ -1,0 +1,56 @@
+﻿### POST /felix/chat   (cold start)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 1."
+}
+
+--- Gemini calls
+CreateCache -> cachedContents/contract
+corpus:
+# Film in programmazione a Roma — {today}
+Totale: 3 film
+
+## Dune - Parte due (Dune: Part Two)
+"Long live the fighters."
+Generi: Fantascienza | Anno: 2024 | Durata: 166 min | Lingua: EN | Cert: PG-13 | Paese: United States of America
+Dir: Denis Villeneuve | Script: Denis Villeneuve, Jon Spaihts | Cast: Timothée Chalamet, Zendaya
+Saga: Dune Collection
+IMDB: 8.5 | RT: 92% | MC: 79
+Premi: Won 2 Oscars.
+Trama: Paul Atreides si unisce a Chani e ai Fremen.
+Proiezioni:
+  Cinema Adriano: lun 01/06 21:00 [VO]
+  Piazza San Cosimato [Open Air]: mar 02/06 21:30 [3D]
+
+## Cortometraggi d'autore
+Proiezioni:
+  Multiplex Augustus: mer 03/06 18:00
+
+## La chimera
+Durata: 130 min
+Dir: Alice Rohrwacher
+RT: 97%
+Proiezioni:
+  Cinema Adriano: lun 01/06 09:00
+
+
+GenerateWithCache(cachedContents/contract)
+  [user] Cosa c'è stasera?
+
+--- felix_cache
+id=1 cache_name=cachedContents/contract expires_at=2099-12-31T00:00:00Z
+
+### POST /felix/chat   (warm)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 1."
+}
+
+--- Gemini calls
+GenerateWithCache(cachedContents/contract)
+  [user] Cosa c'è stasera?
+

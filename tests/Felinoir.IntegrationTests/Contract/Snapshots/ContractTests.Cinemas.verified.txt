@@ -1,0 +1,77 @@
+﻿### GET /cinemas
+200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": "cinema-adriano",
+    "name": "Cinema Adriano",
+    "chain": "NVR",
+    "address": "Piazza Cavour, 22, 00193 Roma RM",
+    "city": "Roma",
+    "country": "IT",
+    "website": "https://cinema-adriano.example.com",
+    "scheduleUrl": "https://cinema-adriano.example.com/schedule",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "multiplex-augustus",
+    "name": "Multiplex Augustus",
+    "address": "Viale Oberdan, 00049 Velletri RM",
+    "city": "Velletri",
+    "country": "IT",
+    "website": "https://multiplex-augustus.example.com",
+    "scheduleUrl": "https://multiplex-augustus.example.com/schedule",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "san-cosimato",
+    "name": "Piazza San Cosimato",
+    "city": "Roma",
+    "country": "IT",
+    "website": "https://san-cosimato.example.com",
+    "scheduleUrl": "https://san-cosimato.example.com/schedule",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z"
+  }
+]
+
+### GET /cinemas/cinema-adriano
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "cinema-adriano",
+  "name": "Cinema Adriano",
+  "chain": "NVR",
+  "address": "Piazza Cavour, 22, 00193 Roma RM",
+  "city": "Roma",
+  "country": "IT",
+  "website": "https://cinema-adriano.example.com",
+  "scheduleUrl": "https://cinema-adriano.example.com/schedule",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}
+
+### GET /cinemas/multiplex-augustus
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "multiplex-augustus",
+  "name": "Multiplex Augustus",
+  "address": "Viale Oberdan, 00049 Velletri RM",
+  "city": "Velletri",
+  "country": "IT",
+  "website": "https://multiplex-augustus.example.com",
+  "scheduleUrl": "https://multiplex-augustus.example.com/schedule",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}
+
+### GET /cinemas/does-not-exist
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Not found"
+}
+

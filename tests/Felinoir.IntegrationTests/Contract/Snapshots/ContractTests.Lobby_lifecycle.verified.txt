@@ -1,0 +1,623 @@
+﻿### POST /lobbies
+> {"screeningId":1,"name":" Ale ","note":"Ci vediamo all'ingresso"}
+201 Created
+Content-Type: application/json; charset=utf-8
+Location: /lobbies/Guid_1
+{
+  "id": "Guid_1",
+  "version": 2,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Ci vediamo all'ingresso",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 2,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Ci vediamo all'ingresso",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1?ifVersion=2   (unchanged)
+304 NotModified
+
+### GET /lobbies/Guid_1?ifVersion=1   (stale version)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 2,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Ci vediamo all'ingresso",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies/Guid_1/participants
+> {"name":"Giulia"}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 3,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Ci vediamo all'ingresso",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_3",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1   (a device with no entry)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 3,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Ci vediamo all'ingresso",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": null,
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### PATCH /lobbies/Guid_1
+> {"note":"Nuova nota"}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 4,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "Nuova nota",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_3",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### PATCH /lobbies/Guid_1   (empty note is valid)
+> {"note":""}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 5,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "Giulia",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_3",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### PATCH /lobbies/Guid_1/participants/Guid_3   (rename someone else)
+> {"name":"  Giuly  "}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 6,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    },
+    {
+      "id": "Guid_3",
+      "name": "Giuly",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### PATCH /lobbies/Guid_1/participants/Guid_3   (rename to own name, different case)
+> {"name":"giuly"}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 7,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "giuly",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_3",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies/Guid_1/participants/Guid_2/claim   (friend claims Ale, releasing Giuly)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 9,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    },
+    {
+      "id": "Guid_3",
+      "name": "giuly",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies/Guid_1/participants/Guid_2/claim   (claiming own entry again)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 9,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    },
+    {
+      "id": "Guid_3",
+      "name": "giuly",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### POST /lobbies/Guid_1/participants/Guid_3/claim   (me claims the released entry)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 10,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    },
+    {
+      "id": "Guid_3",
+      "name": "giuly",
+      "joinedAt": "2099-06-01T08:01:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_3",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### DELETE /lobbies/Guid_1/participants/Guid_3   (leave)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 11,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": null,
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1   (me has no entry any more)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 11,
+  "screening": {
+    "screeningId": 1,
+    "available": true,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": false
+    }
+  ],
+  "meId": null,
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1   (screening left the schedule)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 11,
+  "screening": {
+    "screeningId": null,
+    "available": false,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1   (47h59m after the start)
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": "Guid_1",
+  "version": 11,
+  "screening": {
+    "screeningId": null,
+    "available": false,
+    "movieId": 1,
+    "movieSlug": "dune-parte-due",
+    "movieTitle": "Dune - Parte due",
+    "movieTitleEn": "Dune: Part Two",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/dune.jpg",
+    "cinemaId": "cinema-adriano",
+    "cinemaName": "Cinema Adriano",
+    "datetime": "2099-06-01T21:00:00",
+    "isOV": true,
+    "is3D": false,
+    "bookingUrl": "https://www.nvrcinema.it/adriano/book/1"
+  },
+  "note": "",
+  "participants": [
+    {
+      "id": "Guid_2",
+      "name": "Ale",
+      "joinedAt": "2099-06-01T08:00:00Z",
+      "isMe": true
+    }
+  ],
+  "meId": "Guid_2",
+  "expiresAt": "2099-06-03T19:00:00Z"
+}
+
+### GET /lobbies/Guid_1   (just past 48h: expired)
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+
+### PATCH /lobbies/Guid_1   (edit when expired)
+> {"note":"troppo tardi"}
+404 NotFound
+Content-Type: application/json; charset=utf-8
+{
+  "error": "not_found"
+}
+

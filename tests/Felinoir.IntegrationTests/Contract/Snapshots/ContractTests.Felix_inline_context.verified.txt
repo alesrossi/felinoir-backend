@@ -1,0 +1,143 @@
+﻿### POST /felix/chat   (no messages)
+> {}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Richiesta non valida."
+}
+
+### POST /felix/chat
+> {"messages":[]}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Richiesta non valida."
+}
+
+### POST /felix/chat
+> {"messages":[{"role":"system","content":"hi"}]}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Richiesta non valida."
+}
+
+### POST /felix/chat
+> {"messages":[{"role":"user","content":""}]}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Richiesta non valida."
+}
+
+### POST /felix/chat   (malformed body)
+> not json
+400 BadRequest
+
+--- Gemini calls after the invalid requests
+(no Gemini calls)
+
+### POST /felix/chat   (cold start)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 1."
+}
+
+--- Gemini calls
+CreateCache -> null (caching unavailable)
+corpus:
+# Film in programmazione a Roma — {today}
+Totale: 3 film
+
+## Dune - Parte due (Dune: Part Two)
+"Long live the fighters."
+Generi: Fantascienza | Anno: 2024 | Durata: 166 min | Lingua: EN | Cert: PG-13 | Paese: United States of America
+Dir: Denis Villeneuve | Script: Denis Villeneuve, Jon Spaihts | Cast: Timothée Chalamet, Zendaya
+Saga: Dune Collection
+IMDB: 8.5 | RT: 92% | MC: 79
+Premi: Won 2 Oscars.
+Trama: Paul Atreides si unisce a Chani e ai Fremen.
+Proiezioni:
+  Cinema Adriano: lun 01/06 21:00 [VO]
+  Piazza San Cosimato [Open Air]: mar 02/06 21:30 [3D]
+
+## Cortometraggi d'autore
+Proiezioni:
+  Multiplex Augustus: mer 03/06 18:00
+
+## La chimera
+Durata: 130 min
+Dir: Alice Rohrwacher
+RT: 97%
+Proiezioni:
+  Cinema Adriano: lun 01/06 09:00
+
+
+GenerateInline(corpus: 748 chars)
+  [user] Cosa c'è stasera?
+
+### POST /felix/chat   (warm, with filters)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"},{"role":"assistant","content":"Dune all'Adriano."},{"role":"user","content":"E all'aperto?"}],"filters":{"cinemas":["Piazza San Cosimato"],"dates":["2099-06-02"],"times":["sera"],"genres":["Fantascienza"],"ov":true,"q":"deserto"}}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 3."
+}
+
+--- Gemini calls
+GenerateInline(corpus: 748 chars)
+  [user] Cosa c'è stasera?
+  [assistant] Dune all'Adriano.
+  [user] E all'aperto?
+    
+    [Note: I currently have these filters active on felinoir.it]
+    - Cinemas: Piazza San Cosimato
+    - Dates: 2099-06-02
+    - Times: sera
+    - Genres: Fantascienza
+    - Original version (no dubbing) only
+    - Search: deserto
+    Please only include films and screenings that match ALL of these filters.
+
+### POST /felix/chat   (empty filters)
+> {"messages":[{"role":"user","content":"Ciao"}],"filters":{}}
+200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "reply": "Risposta di Felix al messaggio 1."
+}
+
+--- Gemini calls
+GenerateInline(corpus: 748 chars)
+  [user] Ciao
+
+### POST /felix/chat   (Gemini fails)
+> {"messages":[{"role":"user","content":"<fail>"}]}
+500 InternalServerError
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Qualcosa è andato storto. Riprova tra qualche secondo."
+}
+
+--- Gemini calls
+GenerateInline(corpus: 748 chars)
+  [user] <fail>
+
+### POST /felix/chat   (no API key)
+> {"messages":[{"role":"user","content":"Cosa c'è stasera?"}]}
+503 ServiceUnavailable
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Felix non è configurato al momento."
+}
+
+### POST /felix/chat   (no API key, invalid body)
+> {}
+400 BadRequest
+Content-Type: application/json; charset=utf-8
+{
+  "error": "Richiesta non valida."
+}
+
