@@ -16,7 +16,7 @@ namespace Felinoir.Infrastructure.Persistence;
 /// database is first marked as having applied Baseline, without running it; the drift test
 /// proves Baseline creates exactly that schema. An empty database runs every migration.
 /// </summary>
-public sealed class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMigrator> logger)
+public sealed partial class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMigrator> logger)
 {
     /// <summary>
     /// Id of the migration that reproduces the schema the scrapers had built, read from the
@@ -32,13 +32,13 @@ public sealed class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMi
         var pending = (await db.Database.GetPendingMigrationsAsync(ct)).ToList();
         if (pending.Count == 0)
         {
-            logger.LogInformation("Database schema is up to date");
+            LogUpToDate(logger);
             return;
         }
 
-        logger.LogInformation("Applying {Count} migration(s): {Migrations}", pending.Count, string.Join(", ", pending));
+        LogApplying(logger, pending.Count, pending);
         await db.Database.MigrateAsync(ct);
-        logger.LogInformation("Database schema is up to date");
+        LogUpToDate(logger);
     }
 
     private async Task AdoptScraperBuiltDatabaseAsync(CancellationToken ct)
@@ -52,9 +52,7 @@ public sealed class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMi
                 "The database has the scrapers' tables but not lobbies: its schema is older than the "
                 + "Baseline migration and can't be adopted. Update it with the scrapers first.");
 
-        logger.LogWarning(
-            "Adopting a database built by the scrapers: recording {Migration} as applied without running it",
-            BaselineMigration);
+        LogAdopting(logger, BaselineMigration);
 
         var history = db.GetService<IHistoryRepository>();
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -68,4 +66,14 @@ public sealed class DatabaseMigrator(ApplicationDbContext db, ILogger<DatabaseMi
         await db.Database
             .SqlQuery<bool>($"SELECT to_regclass({"public.\"" + table + "\""}) IS NOT NULL AS \"Value\"")
             .SingleAsync(ct);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Database schema is up to date")]
+    private static partial void LogUpToDate(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Applying {Count} migration(s): {Migrations}")]
+    private static partial void LogApplying(ILogger logger, int count, IReadOnlyList<string> migrations);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "Adopting a database built by the scrapers: recording {Migration} as applied without running it")]
+    private static partial void LogAdopting(ILogger logger, string migration);
 }

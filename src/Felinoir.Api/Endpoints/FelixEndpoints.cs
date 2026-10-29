@@ -2,7 +2,7 @@ using Felinoir.Application.Felix;
 
 namespace Felinoir.Api.Endpoints;
 
-public static class FelixEndpoints
+public static partial class FelixEndpoints
 {
     public static IEndpointRouteBuilder MapFelixEndpoints(this IEndpointRouteBuilder app)
     {
@@ -29,7 +29,7 @@ public static class FelixEndpoints
             }
             catch (Exception ex)
             {
-                loggerFactory.CreateLogger("Felix").LogError(ex, "Felix generation failed");
+                LogGenerationFailed(loggerFactory.CreateLogger("Felix"), ex);
                 return Results.Json(
                     new ErrorResponse("Qualcosa è andato storto. Riprova tra qualche secondo."),
                     statusCode: StatusCodes.Status500InternalServerError);
@@ -66,4 +66,7 @@ public static class FelixEndpoints
 
         return messages;
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Felix generation failed")]
+    private static partial void LogGenerationFailed(ILogger logger, Exception exception);
 }

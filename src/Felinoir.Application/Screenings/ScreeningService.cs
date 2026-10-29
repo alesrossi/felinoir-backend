@@ -31,6 +31,7 @@ public class ScreeningService : IScreeningService
             q = q.Where(s => s.Cinema!.CityId == cityId);
         }
 
+#pragma warning disable CA1309 // Translated to a SQL text comparison; no .NET culture is involved.
         if (query.From is not null)
         {
             var from = Bound(query.From);
@@ -42,6 +43,7 @@ public class ScreeningService : IScreeningService
             var to = Bound(query.To);
             q = q.Where(s => string.Compare(s.Datetime, to) <= 0);
         }
+#pragma warning restore CA1309
 
         return await q
             .OrderBy(s => s.Datetime)

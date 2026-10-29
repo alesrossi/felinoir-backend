@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Felinoir.Application.Felix;
 
@@ -29,7 +30,7 @@ internal sealed class RecordingGeminiClient : IGeminiClient
 
     public Task<GeminiCacheRef?> CreateCacheAsync(string corpus, CancellationToken ct = default)
     {
-        _log.AppendLine($"CreateCache -> {CacheToCreate?.Name ?? "null (caching unavailable)"}");
+        _log.AppendLine(CultureInfo.InvariantCulture, $"CreateCache -> {CacheToCreate?.Name ?? "null (caching unavailable)"}");
         _log.AppendLine("corpus:").AppendLine(corpus).AppendLine();
         return Task.FromResult(CacheToCreate);
     }
@@ -37,7 +38,7 @@ internal sealed class RecordingGeminiClient : IGeminiClient
     public Task<string?> GenerateWithCacheAsync(
         IReadOnlyList<ChatMessage> messages, string cacheName, CancellationToken ct = default)
     {
-        _log.AppendLine($"GenerateWithCache({cacheName})");
+        _log.AppendLine(CultureInfo.InvariantCulture, $"GenerateWithCache({cacheName})");
         AppendMessages(messages);
         return Task.FromResult<string?>(Reply(messages));
     }
@@ -45,7 +46,7 @@ internal sealed class RecordingGeminiClient : IGeminiClient
     public Task<string> GenerateInlineAsync(
         IReadOnlyList<ChatMessage> messages, string corpus, CancellationToken ct = default)
     {
-        _log.AppendLine($"GenerateInline(corpus: {corpus.Length} chars)");
+        _log.AppendLine(CultureInfo.InvariantCulture, $"GenerateInline(corpus: {corpus.Length} chars)");
         AppendMessages(messages);
         return Task.FromResult(Reply(messages));
     }
@@ -61,7 +62,7 @@ internal sealed class RecordingGeminiClient : IGeminiClient
     private void AppendMessages(IReadOnlyList<ChatMessage> messages)
     {
         foreach (var m in messages)
-            _log.AppendLine($"  [{m.Role}] {m.Content.Replace("\n", "\n    ")}");
+            _log.AppendLine(CultureInfo.InvariantCulture, $"  [{m.Role}] {m.Content.Replace("\n", "\n    ")}");
     }
 
     private static string Reply(IReadOnlyList<ChatMessage> messages) =>

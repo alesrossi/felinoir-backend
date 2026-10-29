@@ -45,8 +45,10 @@ public sealed class CorpusBuilder : ICorpusBuilder
             .Take(MovieLimit)
             .ToListAsync(ct);
 
+#pragma warning disable CA1309 // Translated to a SQL text comparison; no .NET culture is involved.
         var screenings = await _db.Screenings.AsNoTracking()
             .Where(s => s.Cinema!.CityId == cityId && string.Compare(s.Datetime, now) >= 0)
+#pragma warning restore CA1309
             .Take(ScreeningLimit)
             .ToListAsync(ct);
 

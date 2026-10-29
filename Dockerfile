@@ -9,6 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy only the project files first so `restore` is cached unless dependencies change.
+COPY Directory.Build.props Directory.Packages.props ./
 COPY src/Felinoir.Api/Felinoir.Api.csproj                 src/Felinoir.Api/
 COPY src/Felinoir.Application/Felinoir.Application.csproj  src/Felinoir.Application/
 COPY src/Felinoir.Domain/Felinoir.Domain.csproj           src/Felinoir.Domain/

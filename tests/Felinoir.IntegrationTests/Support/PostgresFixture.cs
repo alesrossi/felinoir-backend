@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using DotNet.Testcontainers.Builders;
@@ -43,14 +44,13 @@ public sealed class PostgresFixture : IAsyncLifetime
         _connectionString =
             $"Host=127.0.0.1;Port={_port};Database={Db};Username={User};Password={Password}";
 
-        _container = new ContainerBuilder()
-            .WithImage("postgres:16-alpine")
+        _container = new ContainerBuilder("postgres:16-alpine")
             .WithEnvironment("POSTGRES_DB", Db)
             .WithEnvironment("POSTGRES_USER", User)
             .WithEnvironment("POSTGRES_PASSWORD", Password)
-            .WithEnvironment("PGPORT", _port.ToString())
+            .WithEnvironment("PGPORT", _port.ToString(CultureInfo.InvariantCulture))
             // Run on the host network to bypass the Calico-blocked bridge.
-            .WithCreateParameterModifier(p => p.HostConfig.NetworkMode = "host")
+            .WithCreateParameterModifier(p => p.HostConfig!.NetworkMode = "host")
             // The generic builder's readiness is just "container is running"; real DB
             // readiness is handled by WaitForPostgresAsync, since a port-based probe
             // can't work under host networking.

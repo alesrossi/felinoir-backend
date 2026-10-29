@@ -1,3 +1,4 @@
+using System.Globalization;
 using Felinoir.Application.Felix;
 using Felinoir.Domain.Entities;
 using Felinoir.Infrastructure.Persistence;
@@ -99,7 +100,7 @@ public class FelixServiceTests
         {
             CityId = City.RomeId,
             CacheName = "cachedContents/from-db",
-            ExpiresAt = FarFuture.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            ExpiresAt = FarFuture.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
             CreatedAt = "2026-01-01T00:00:00Z",
         });
         await db.SaveChangesAsync();

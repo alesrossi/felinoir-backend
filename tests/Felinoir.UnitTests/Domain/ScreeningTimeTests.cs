@@ -33,7 +33,7 @@ public class ScreeningTimeTests
     [InlineData("2026-03-29T03:00:00")]  // first hour after the spring-forward jump
     public void Round_trips_through_an_instant(string stored)
     {
-        ScreeningTime.TryParse(stored, out var time);
+        var time = Parse(stored);
 
         Assert.Equal(stored, ScreeningTime.FromInstant(time.ToInstant()).ToString());
     }
@@ -41,7 +41,7 @@ public class ScreeningTimeTests
     [Fact]
     public void Writes_the_canonical_form_with_seconds()
     {
-        ScreeningTime.TryParse("2026-10-17T21:00", out var time);
+        var time = Parse("2026-10-17T21:00");
 
         Assert.Equal("2026-10-17T21:00:00", time.ToString());
     }
@@ -50,7 +50,7 @@ public class ScreeningTimeTests
     public void Uses_the_winter_offset_in_the_autumn_hour_that_happens_twice()
     {
         // 02:30 on 2026-10-25 happens at 00:30Z (CEST) and again at 01:30Z (CET).
-        ScreeningTime.TryParse("2026-10-25T02:30:00", out var time);
+        var time = Parse("2026-10-25T02:30:00");
 
         Assert.Equal("2026-10-25T01:30:00Z", UtcText.Format(time.ToInstant()));
     }
@@ -75,10 +75,16 @@ public class ScreeningTimeTests
     [Fact]
     public void Orders_chronologically()
     {
-        ScreeningTime.TryParse("2026-06-23T09:00:00", out var morning);
-        ScreeningTime.TryParse("2026-06-23T21:00", out var evening);
+        var morning = Parse("2026-06-23T09:00:00");
+        var evening = Parse("2026-06-23T21:00");
 
         Assert.True(morning < evening);
         Assert.True(evening >= morning);
+    }
+
+    private static ScreeningTime Parse(string stored)
+    {
+        Assert.True(ScreeningTime.TryParse(stored, out var time), stored);
+        return time;
     }
 }

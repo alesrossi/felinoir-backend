@@ -13,7 +13,7 @@ namespace Felinoir.Infrastructure.Felix;
 /// using <c>gemini-2.5-flash-lite</c>, and owns the system prompt and JSON payload shapes.
 /// Higher-level caching/fallback logic lives in <c>FelixService</c>.
 /// </summary>
-public sealed class GeminiClient : IGeminiClient
+public sealed partial class GeminiClient : IGeminiClient
 {
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta";
     private const string Model = "gemini-2.5-flash-lite";
@@ -51,7 +51,7 @@ public sealed class GeminiClient : IGeminiClient
         if (!res.IsSuccessStatusCode)
         {
             var error = await res.Content.ReadAsStringAsync(ct);
-            _logger.LogError("[felix] cache creation failed: {Status} {Body}", (int)res.StatusCode, error);
+            LogCacheCreationFailed(_logger, (int)res.StatusCode, error);
             return null;
         }
 
@@ -161,4 +161,7 @@ public sealed class GeminiClient : IGeminiClient
             Today is {today}.
             """;
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "[felix] cache creation failed: {Status} {Body}")]
+    private static partial void LogCacheCreationFailed(ILogger logger, int status, string body);
 }

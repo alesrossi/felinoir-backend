@@ -27,6 +27,12 @@ try
 }
 catch (Exception ex)
 {
-    logger.LogCritical(ex, "Migration failed");
+    Log.MigrationFailed(logger, ex);
     return 1;
+}
+
+internal static partial class Log
+{
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Migration failed")]
+    public static partial void MigrationFailed(ILogger logger, Exception exception);
 }

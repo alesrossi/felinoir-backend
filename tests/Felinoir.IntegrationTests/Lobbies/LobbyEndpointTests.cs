@@ -112,7 +112,7 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
         Assert.EndsWith("Z", p.GetProperty("joinedAt").GetString());
         Assert.Equal(p.GetProperty("id").GetString(), lobby.GetProperty("meId").GetString());
 
-        ScreeningTime.TryParse(_startsAt, out var startsAt);
+        Assert.True(ScreeningTime.TryParse(_startsAt, out var startsAt));
         Assert.Equal(UtcText.Format(startsAt.ToInstant().AddHours(48)), lobby.GetProperty("expiresAt").GetString());
     }
 

@@ -9,7 +9,7 @@ namespace Felinoir.UnitTests.Lobbies;
 /// Service rules over the InMemory provider. Database-only behaviour (version triggers,
 /// unique indexes, the cleanup function) is covered by the integration tests.
 /// </summary>
-public class LobbyServiceTests : IDisposable
+public sealed class LobbyServiceTests : IDisposable
 {
     // 2026-10-16 18:00 in Rome (CEST).
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 16, 0, 0, TimeSpan.Zero);
