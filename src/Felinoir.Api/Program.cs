@@ -1,10 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Felinoir.Api.Endpoints;
+using Felinoir.Api.Observability;
 using Felinoir.Application;
 using Felinoir.Infrastructure;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using Serilog;
 
 // Load .env for local dev / IDE runs. No-op when the file is absent (CI/prod),
 // where the real environment already exports DATABASE_URL etc. NoClobber: variables that are
@@ -12,6 +14,16 @@ using Scalar.AspNetCore;
 DotNetEnv.Env.NoClobber().TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Captive dependencies (a singleton holding a scoped service) and unresolvable registrations fail
+// at startup in every environment, not only in Development.
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
+builder.AddObservability();
 
 var port = builder.Configuration["PORT"] ?? "3001";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -38,7 +50,8 @@ builder.Services.AddOpenApi(options =>
 
 // CORS: all origins, per spec (public, unauthenticated API).
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
+        .WithExposedHeaders(ObservabilityExtensions.TraceIdHeader)));
 
 // camelCase JSON; null/optional fields omitted to match the spec's "?" optionals.
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -50,6 +63,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
+app.UseTraceIdHeader();
+app.UseSerilogRequestLogging();
 app.UseCors();
 
 // OpenAPI JSON at /openapi/v1.json; interactive Scalar reference at /scalar.
