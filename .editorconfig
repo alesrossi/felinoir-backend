@@ -31,3 +31,7 @@ trim_trailing_whitespace = false
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1861.severity = none
 dotnet_diagnostic.CA1711.severity = none
+
+[*.cs]
+# CA1716 protects Visual Basic callers from names like Error; this solution is C# only.
+dotnet_diagnostic.CA1716.severity = none

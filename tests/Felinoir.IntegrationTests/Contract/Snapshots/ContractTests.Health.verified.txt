@@ -5,3 +5,25 @@ Content-Type: application/json; charset=utf-8
   "ok": true
 }
 
+### GET /no/such/route   (unknown route)
+404 NotFound
+Content-Type: application/problem+json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "traceId": "TraceId",
+  "error": "not_found"
+}
+
+### DELETE /health   (method not allowed)
+405 MethodNotAllowed
+Content-Type: application/problem+json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.6",
+  "title": "Method Not Allowed",
+  "status": 405,
+  "traceId": "TraceId",
+  "error": "method_not_allowed"
+}
+

@@ -283,6 +283,14 @@ Content-Type: application/json; charset=utf-8
 
 ### GET /movies?limit=abc   (unparseable)
 400 BadRequest
+Content-Type: application/problem+json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "traceId": "TraceId",
+  "error": "bad_request"
+}
 
 ### GET /movies/1
 200 OK

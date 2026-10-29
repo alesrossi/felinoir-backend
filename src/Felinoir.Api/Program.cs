@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Felinoir.Api.Endpoints;
+using Felinoir.Api.Errors;
 using Felinoir.Api.Observability;
 using Felinoir.Application;
 using Felinoir.Infrastructure;
@@ -24,6 +25,7 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 builder.AddObservability();
+builder.Services.AddProblemResponses();
 
 var port = builder.Configuration["PORT"] ?? "3001";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -65,6 +67,7 @@ var app = builder.Build();
 
 app.UseTraceIdHeader();
 app.UseSerilogRequestLogging();
+app.UseProblemResponses();
 app.UseCors();
 
 // OpenAPI JSON at /openapi/v1.json; interactive Scalar reference at /scalar.

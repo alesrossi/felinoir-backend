@@ -9,8 +9,9 @@ namespace Felinoir.IntegrationTests.Contract;
 /// Sends requests and writes each exchange (request line, status, contract headers, body) into
 /// one text document, which a test then verifies as a snapshot. GUIDs are replaced by
 /// <c>Guid_1</c>, <c>Guid_2</c>… in order of first appearance, so the same id keeps the same
-/// name across a scenario. JSON bodies are re-indented; their property order and values are
-/// kept, so any change to the wire shape shows up as a diff.
+/// name across a scenario, and a problem response's random <c>traceId</c> becomes <c>TraceId</c>.
+/// JSON bodies are re-indented; their property order and values are kept, so any change to the
+/// wire shape shows up as a diff.
 /// </summary>
 internal sealed partial class ContractRecorder(HttpClient client)
 {
@@ -88,7 +89,8 @@ internal sealed partial class ContractRecorder(HttpClient client)
     public string Render()
     {
         var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        return GuidPattern().Replace(_text.ToString(), m =>
+        var text = TraceIdPattern().Replace(_text.ToString(), "\"traceId\": \"TraceId\"");
+        return GuidPattern().Replace(text, m =>
         {
             if (!names.TryGetValue(m.Value, out var name))
                 names[m.Value] = name = $"Guid_{names.Count + 1}";
@@ -100,6 +102,9 @@ internal sealed partial class ContractRecorder(HttpClient client)
         body is string s
             ? new StringContent(s, Encoding.UTF8, "application/json")
             : new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+    [GeneratedRegex("\"traceId\": \"[0-9a-f]{32}\"")]
+    private static partial Regex TraceIdPattern();
 
     [GeneratedRegex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOptions.IgnoreCase)]
     private static partial Regex GuidPattern();

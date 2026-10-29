@@ -65,6 +65,8 @@ public sealed class ContractTests(PostgresFixture fixture) : PostgresTestBase(fi
     {
         var r = Recorder();
         await r.GetAsync("/health");
+        await r.GetAsync("/no/such/route", label: "unknown route");
+        await r.SendAsync(HttpMethod.Delete, "/health", label: "method not allowed");
         await Snapshot(r);
     }
 
