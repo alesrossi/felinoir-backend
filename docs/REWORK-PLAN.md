@@ -1,0 +1,282 @@
+# Felinoir Backend — Rework Plan
+
+The plan for the rework described in `new.md`, as agreed in the design session of
+2026-10-28/29. The work is split into steps that each leave the `refactoring` branch building
+and green.
+
+Related documents:
+
+- `CONTEXT.md` — the domain language (City, Cinema, Movie, Screening, Lobby, Participant,
+  Device, Claim, Felix, Corpus, In programmazione, Felix Context). Use these terms in code.
+- `docs/adr/0001-backend-owns-database-schema.md`
+- `docs/adr/0002-clean-architecture-with-cqrs-slices.md`
+- `docs/SCRAPERS-SCHEMA-MIGRATION.md` — what changes in the scrapers repo, and the production
+  cutover.
+
+---
+
+## Ground rules
+
+- **Development only.** All work happens on `refactoring` (each step as its own branch and PR into
+  `refactoring`). `main` stays as the current production image and is untouched until the
+  cutover. Compatibility with the deployed scrapers and the old API image does **not** need to
+  be kept along the way.
+- **One production cutover at the end** (see `docs/SCRAPERS-SCHEMA-MIGRATION.md`): database
+  backup, migrator, new API and new scrapers deployed together.
+- **The HTTP contract stays frozen**, except for additive changes. The characterisation
+  snapshots from step 0 enforce this. The only frontend change in scope is observability
+  (sending `traceparent`, reading `traceId`). Any other mismatch with the frontend is handled
+  later, case by case.
+- **Every migration has a working `Down()`.**
+- `CLAUDE.md` rules that conflict with this plan (service pattern, no repository/UoW, schema
+  owned by the scrapers, `cinemas.yml`) are superseded now and are rewritten in step 7.
+
+---
+
+## Step 0 — Safety net
+
+Goal: prove later steps change structure, not behaviour.
+
+- **Characterisation snapshots** with Verify: seed a fixed dataset, call every endpoint
+  (`/health`, `/movies` incl. slug/id, `/cinemas`, `/screenings` with each filter and
+  `withRelations`, `/felix/chat` with a faked `IGeminiClient`, every `/lobbies` route and error
+  code), and snapshot status, relevant headers and JSON body. Taken on the current code, before
+  anything else moves.
+- **Test infrastructure:** one Postgres Testcontainer per test run (keep the host-network
+  workaround), **Respawn** to reset data between tests.
+- **Production schema reference:** commit a `pg_dump --schema-only` of the current database
+  (`tests/schema/production.sql`) as the baseline for drift checks.
+
+Done when: the snapshot suite passes against the current code and runs in CI.
+
+## Step 1 — Schema ownership (ADR 0001)
+
+- **`AdoptScraperSchema` migration.** Bring into the EF model everything that exists only in
+  the scrapers' `schema.ts`. Known so far:
+  - `movies.canonical_title`, `tmdb_match_attempts`, `tmdb_last_attempt_at`, `has_matches`
+    (with its CHECK)
+  - `pg_trgm` extension and `idx_movies_canonical_trgm` (GIN), via `HasPostgresExtension` /
+    `HasMethod("gin")`
+  - `idx_movies_title`, `idx_movies_external_id` (check against the snapshot)
+  - anything else found by diffing `production.sql` against a database built from EF migrations
+
+  Written idempotently (`IF NOT EXISTS`), so it is a no-op on production and creates the
+  objects on a fresh database. It is the **last** idempotent migration. The one-off backfill
+  `UPDATE`s from `schema.ts` are not carried over.
+- **Where the scraper-only data lives:** `tmdb_lookup_cache` and `ai_match_verdicts` become
+  persistence-only types in Infrastructure. The scraper-only movie columns are **shadow
+  properties** on `Movie`. Domain never sees them.
+- **Migrator:** an EF migration bundle (`dotnet ef migrations bundle`) built into its own image.
+  In `server/docker-compose.yml` it runs once, and `api` and `cinema-scraper` wait for it with
+  `depends_on: condition: service_completed_successfully`. The API still never migrates at
+  startup.
+- **Drift test in CI:** apply all migrations to an empty database, assert
+  `has-pending-model-changes` is false, and diff the resulting schema against
+  `production.sql` (updated on purpose whenever a migration changes it).
+
+Done when: a database built purely from EF migrations matches production, and the drift test
+is green.
+
+## Step 2 — Cities and cinema facts
+
+Done in the **current** architecture with minimal code, so the schema is final before the
+refactor starts.
+
+- **`cities` table:** `id` (slug, e.g. `rome`), `name` (`Roma`), `created_at`, `updated_at`,
+  and optionally a centre lat/lng. Seeded with `rome` by the migration. New cities are always
+  added by backend migrations (they are reference data).
+- **`cinemas`:**
+  - add `city_id` (NOT NULL, FK → `cities`, existing rows backfilled to `rome`, the Velletri
+    multiplex included)
+  - add `latitude`, `longitude` and `open_air` (boolean, default false), filled from
+    `cinemas.yml` by the migration
+  - drop the free-text `city` and `idx_cinemas_city`, and add an index on `city_id`
+- **JSON stays compatible:** `Cinema.city` is still a string, now taken from `cities.name`.
+  `coordinates` and `openAir` may be added as new fields.
+- **`?city=` filter:** optional on `/screenings`, and newly on `/movies`, `/cinemas` and Felix.
+  It accepts the City id (`rome`) and, case-insensitively, the display name (`Roma`). With no
+  city, results are the same as today.
+- **`felix_cache`:** keyed by `city_id` (PK, FK → `cities`) in place of `id = 1`.
+- **`ScreeningTime`:** a value object over `screenings.datetime`, which holds **Italian local
+  time** with no offset (`yyyy-MM-ddTHH:mm:ss`), not UTC as `SPEC.md` claims. It parses strictly,
+  converts with `Europe/Rome` (the only zone, since every City is in Italy), and gives the
+  `now` used in comparisons. **This fixes a bug:** `CorpusBuilder` compares a UTC `now` with
+  local screening times, so Felix offers screenings that started up to 1–2 h ago, and
+  `?from=`/`?to=` have the same mismatch. `RomeTime` gets folded into it.
+- **The backend's `cinemas.yml` is deleted**, along with `CinemasYamlConfigProvider`,
+  `CinemasConfigLocator`, `ICinemaConfigProvider` and the YamlDotNet dependency. The corpus reads
+  `open_air` from the database. `cinemas.yml` now lives only in the scrapers repo.
+
+Done when: the drift test and the snapshots are green (snapshots updated only for the additive
+fields and the corrected time comparisons).
+
+## Step 3 — Foundations (ADR 0002)
+
+- **Build hygiene:** `Directory.Build.props` (nullable, `TreatWarningsAsErrors`, .NET
+  analyzers at `Recommended`, implicit usings), `.editorconfig`, central package management
+  with `Directory.Packages.props`. Nullable annotations matter even more now: EF reads
+  `string` vs `string?` as `NOT NULL` vs nullable when it generates migrations.
+- **Mediator:** `martinothamar/Mediator` (source-generated, MIT). Pipeline behaviours, in
+  order:
+  1. `LoggingBehavior` — request name, duration and outcome, inside a scope. Never logs the
+     payload (device tokens and chat contents are sensitive).
+  2. `ValidationBehavior` — runs FluentValidation validators for the request's shape.
+  3. `UnitOfWorkBehavior` — commands only: commits through `IUnitOfWork` after the handler
+     succeeds, then dispatches domain events.
+- **Building blocks** (Domain / Application):
+  - `Entity<TId>`, `AggregateRoot<TId>` (collects domain events), `ValueObject` where a record
+    isn't enough
+  - strongly-typed ids as `readonly record struct` (`LobbyId`, `ParticipantId`, `CityId`,
+    `CinemaId`, `MovieId`, `ScreeningId`)
+  - `Result<T>` with `Error(Code, Kind)`, where `Kind` is NotFound, Conflict, Validation or
+    Unprocessable. In-house, about 40 lines.
+  - `PageRequest` (`readonly record struct`) owns the limit/offset clamps, so the rule leaves
+    the endpoints.
+- **Persistence abstractions:** `IUnitOfWork`, `I<Aggregate>Repository` (aggregates only), and
+  `IReadDbContext` (no-tracking, for queries).
+- **Errors:** a single `Error.Kind` → HTTP status mapping in Api. Responses become **RFC 7807
+  ProblemDetails** that keep the old code as an extension: `{ type, title, status, traceId,
+  error: "name_taken" }`. This is a superset of today's `{ error }`. Check that the frontend
+  doesn't look at the `Content-Type` exactly (`application/problem+json`). A global
+  `IExceptionHandler` returns a ProblemDetails 500 for real exceptions.
+- **Observability:**
+  - **W3C trace context** is the correlation id. ASP.NET reads incoming `traceparent`. The trace
+    id goes into every error body (`traceId`) and an `X-Trace-Id` response header.
+  - **OpenTelemetry** tracing and metrics: ASP.NET Core, `HttpClient` and Npgsql
+    instrumentation, plus `ActivitySource("Felinoir")` for the mediator pipeline and Felix
+    rebuilds. Background work starts its own root activity. The OTLP exporter is off until
+    configured; Elastic accepts OTLP directly, so connecting Elastic later is configuration only.
+  - **Serilog**, configured entirely through `ReadFrom.Configuration` (appsettings or environment
+    variables: levels, per-namespace overrides, sinks). The **Elastic Common Schema** JSON
+    formatter goes to stdout in production and a readable console in development, with
+    `trace.id` and `span.id` on every line.
+- **Architecture tests** (NetArchTest):
+  - Domain references nothing.
+  - Endpoints never reference `DbContext`.
+  - Query handlers never reference repositories.
+  - Every command has a validator.
+- **Lifetimes:**
+  - `DbContext`, repositories, the unit of work and handlers are scoped.
+  - The singletons are `TimeProvider`, the Felix context registry and options.
+  - Typed `HttpClient`s are transient and are never held by a singleton.
+  - DI validation is on (`ValidateScopes` and `ValidateOnBuild`), so captive dependencies fail
+    at startup.
+
+## Step 4 — Catalogue slices (Movies, Cinemas, Screenings)
+
+- One query plus handler per use case under `Features/<Area>/<UseCase>/`: `GetMovies`,
+  `GetMovieById`, `GetMovieBySlug`, `GetCinemas`, `GetCinemaById`, `GetScreenings`.
+- Handlers project straight to `sealed record` responses inside `Select(...)` with
+  `AsNoTracking`, and `Include` relations only when `withRelations` is set. No AutoMapper, no
+  Mapperly.
+- Catalogue entities stay plain: no public setters, no repositories, no behaviour invented for
+  the sake of DDD.
+- Endpoints become one line each (`sender.Send(...)`), and `/movies/slug/{slug}` is still
+  registered before `/movies/{id}`.
+- `IMovieService`, `ICinemaService`, `IScreeningService` and their implementations are deleted.
+
+## Step 5 — Lobbies (the write model)
+
+- **Aggregate root `Lobby`** (`LobbyId`):
+  - `ScreeningSnapshot`: a value object (EF complex type)
+  - `LobbyNote`: at most 500 characters
+  - a collection of `Participant` entities, each with a `ParticipantName` (trimmed, 1–40
+    characters, no control characters) and an optional `DeviceHash`
+- **Behaviour on the root, returning `Result`:**
+  - `Create(snapshot, creatorName, device, now)` rejects screenings that have already started.
+  - `Join`, `Rename`, `Remove` and `Claim` enforce "unique name ignoring case" and "one entry
+    per device". `Claim` moves the device off its other entry.
+  - `ChangeNote` updates the note.
+  - `IsExpiredAt(now)` is true 48 h after the start.
+- **Versioning moves to the domain:**
+  - Every change increments `Version`, which EF maps as an **optimistic concurrency token**.
+    A conflict returns a 409, or the handler retries once.
+  - A migration drops the `lobby_participants_bump_version` and `lobbies_bump_version_on_note`
+    triggers.
+  - `delete_expired_lobbies()` stays a database function, called by the hourly cleanup.
+- **Constraint backstops:** the database unique constraints stay as protection against
+  concurrent requests. A 23505 is translated into the same domain errors (`NameTaken`,
+  `AlreadyJoined`).
+- **Slices:**
+  - `CreateLobby`, `GetLobby` (keeps the cheap version/`starts_at` head lookup that answers 304)
+  - `ChangeLobbyNote`
+  - `JoinLobby`, `RenameParticipant`, `RemoveParticipant`, `ClaimParticipant`
+  - each with an `ILobbyRepository` and a FluentValidation validator
+- `LobbyService`, `LobbyResult`, `LobbyError` and `LobbyInput` are deleted.
+
+## Step 6 — Felix
+
+- **Slice `AskFelix`:** `AskFelixCommand(CityId, Messages, Filters)`. A chat turn's speaker
+  becomes a validated value object in place of the `"user"`/`"assistant"` string checks.
+- **The corpus is split:**
+  - `CorpusSnapshotQuery` loads plain data for one City: Movies that are in programmazione
+    (by `ScreeningTime`), their upcoming Screenings, and Cinemas with `IsOpenAir`.
+  - `CorpusRenderer` is a **pure** function from snapshot to Markdown. The corpus rules live
+    here as named, tested methods: display title (TMDB title, else the title), preferred rating
+    (IMDb, then RT, then Metacritic) and in programmazione. They are **Felix rules, not Movie
+    rules**. Tests use golden files and need no database.
+- **Readiness as a pure decision:** `FelixReadiness.Decide(state, now)` returns `UseCache`,
+  `UseInline`, `LoadPersisted` or `Rebuild`. The rules:
+  - A cache stays fresh until 1 h before it expires, and an inline corpus for 24 h, **and**
+  - **a Felix Context built before the most recent daily cutoff is stale.** The cutoff is
+    configurable, default 05:00 Italian time, after the nightly scrape. That way the first chat
+    of the day rebuilds from that night's data, instead of the rebuild time drifting with
+    traffic.
+
+  The handler carries out the decision. Everything reads `TimeProvider`, with no
+  `DateTimeOffset.UtcNow`.
+- **Per-City state:** `FelixState` becomes a singleton `FelixContextRegistry` mapping each
+  `CityId` to its own state and semaphore, so one City rebuilding never blocks another. Each
+  City is persisted in `felix_cache` by `city_id`.
+- **Gemini:** registered with `AddHttpClient<IGeminiClient, GeminiClient>()` plus the standard
+  resilience handler (timeout, retry with jitter). Settings are bound through
+  `IOptions<GeminiOptions>` and validated at startup. Swallowed exceptions are now logged.
+
+## Step 7 — Wrap-up
+
+- Remove `IApplicationDbContext` and anything else the slices replaced.
+- Rewrite `CLAUDE.md` (new architecture rules, schema ownership, migrator, testing layers),
+  `docs/ARCHITECTURE.md` and `SPEC.md` (screening time is Italian local time, `cities`, the new
+  cinema columns, `felix_cache` by City, triggers removed, ProblemDetails, `?city=`).
+- Mark `docs/REWORK-EXPLORATIONS.md` as historical.
+- Prepare the cutover described in `docs/SCRAPERS-SCHEMA-MIGRATION.md`.
+
+## Step 8 — After the cutover
+
+- **Extra targeted logging** where the default pipeline logging turns out to be thin, for
+  example Felix rebuild reasons, Gemini fallbacks and lobby conflicts.
+- **Frontend observability:** the Next.js server propagates `traceparent` (`instrumentation.ts`
+  / `@vercel/otel`) and shows or logs `traceId` from error responses.
+
+---
+
+## Deferred (decided against for now)
+
+- **Performance work:** output caching (5-min catalogue TTL was judged acceptable), response
+  compression, `AddDbContextPool`, compiled queries, reducing the 50 000 default screening
+  limit, BenchmarkDotNet and k6. Projections in `Select` are **not** deferred — they are how
+  query slices are written.
+- **Breaking contract changes:** for example `city` becoming required once there are several
+  Cities, or a `/v2` route group.
+- **"Cinemas near me"**: a distance-based feature using cinema coordinates, separate from City.
+
+## Decision log
+
+| # | Decision |
+|---|---|
+| Q1 | EF migrations are the only source of DDL. A one-shot migrator runs before the API and the scrapers. The scrapers stop issuing DDL and check the migration version at startup. → ADR 0001 |
+| Q2 | `AdoptScraperSchema` absorbs the scraper-only objects. Misalignment is a bug. |
+| Q3–Q4 | A City is the Italian city a Cinema is listed under. Every current Cinema is a Rome Cinema, the Velletri one included. The `?city=` filter is optional groundwork. |
+| Q5 | The `cities` table, `cinemas.city_id`, the free-text `city` dropped, JSON `city` from `cities.name`, `felix_cache` by City, and `?city=` accepting the id or the name. |
+| Q6 | Cinema coordinates and `open_air` move to the database. `cinemas.yml` is scraper-only. |
+| Q7 | Clean architecture, CQRS-lite feature slices, `martinothamar/Mediator`, repositories and the unit of work for aggregates only, queries projecting from a read context. → ADR 0002 |
+| Q8 | The Lobby aggregate, and versioning moved from triggers to an EF concurrency token. |
+| Q9–Q10 | Catalogue entities stay plain. The corpus rules belong to Felix. `ScreeningTime` is Italian local time. Scraper-only data stays out of Domain. `PageRequest`. |
+| Q11 | Felix: a pure renderer, a pure readiness decision, a per-City registry, a typed resilient `HttpClient`. |
+| Q12 | A daily cutoff rule for Felix Context staleness. |
+| Q13 | W3C trace context, OpenTelemetry, Serilog + ECS configured entirely from configuration. The frontend adapts for observability only. |
+| Q14 | The contract is frozen except for additive changes. |
+| Q15 | Characterisation snapshots first, EF InMemory removed, real Postgres for handlers, schema-drift and architecture tests. |
+| Q16 | Hand-written mapping, records and record structs, strongly-typed ids, in-house `Result`, FluentValidation, interfaces only at boundaries, nullable plus warnings as errors. |
+| Q17 | Performance work deferred. |
+| Q18–Q20 | The step order above. Step PRs into `refactoring`. Development only, so compatibility may break. One production cutover at the end. |
