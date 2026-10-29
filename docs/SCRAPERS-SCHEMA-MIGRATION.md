@@ -139,7 +139,7 @@ everything the backend's `Baseline` migration creates (the drift test proves thi
    changes), then `docker compose pull cinema-migrator cinema-backend cinema-scraper`.
 5. **Migrate**, watching the output: `docker compose run --rm cinema-migrator`. Expect
    *"Adopting a database built by the scrapers: recording 20261029083355_Baseline as applied"*,
-   then *"Applying 3 migration(s): …NormaliseKeys, …Cities, …LobbyVersionInDomain"*, then
+   then *"Applying 3 migration(s): ["20261029083600_NormaliseKeys","20261029090606_Cities","20261029110416_LobbyVersionInDomain"]"*, then
    *"Database schema is up to date"* and exit code 0. A second run only prints *"up to date"*.
 6. **Start the API**: `docker compose up -d cinema-backend` (the frontends follow its health check).
 7. **Verify**:
