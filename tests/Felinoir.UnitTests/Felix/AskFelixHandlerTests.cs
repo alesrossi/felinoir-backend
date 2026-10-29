@@ -190,6 +190,21 @@ public class AskFelixHandlerTests
     }
 
     [Fact]
+    public async Task Today_in_the_filters_is_the_italian_date()
+    {
+        CacheCreationReturns(null);
+        _clock.Now = new DateTimeOffset(2026, 10, 29, 23, 30, 0, TimeSpan.Zero); // 00:30 on the 30th in Rome
+        IReadOnlyList<ChatTurn>? sent = null;
+        _gemini.Setup(g => g.GenerateInlineAsync(It.IsAny<IReadOnlyList<ChatTurn>>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyList<ChatTurn>, string, CancellationToken>((turns, _, _) => sent = turns)
+            .ReturnsAsync("reply");
+
+        await Handler().Handle(Ask("Cosa c'è?", new FelixFilters(Dates: ["2026-10-29", "2026-10-30"])), default);
+
+        Assert.Contains("- Dates: 2026-10-29, today (2026-10-30)", Assert.Single(sent!).Content);
+    }
+
+    [Fact]
     public async Task A_failure_to_answer_is_felixs_message_not_an_exception()
     {
         CacheCreationReturns(null);

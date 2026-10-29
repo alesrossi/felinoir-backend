@@ -33,15 +33,15 @@ public sealed partial class FelixContextStore(ApplicationDbContext db, ILogger<F
 
     public async Task SaveAsync(string cityId, FelixContext context, CancellationToken cancellationToken = default)
     {
-        if (!context.IsCached) return;
+        if (context is not { CacheName: { } cacheName, CacheExpiresAt: { } cacheExpiresAt }) return;
 
         try
         {
-            var expiresAt = UtcText.Format(context.CacheExpiresAt!.Value);
+            var expiresAt = UtcText.Format(cacheExpiresAt);
             var builtAt = UtcText.Format(context.BuiltAt);
             await db.Database.ExecuteSqlAsync($"""
                 INSERT INTO felix_cache (city_id, cache_name, expires_at, created_at)
-                VALUES ({cityId}, {context.CacheName}, {expiresAt}, {builtAt})
+                VALUES ({cityId}, {cacheName}, {expiresAt}, {builtAt})
                 ON CONFLICT (city_id) DO UPDATE
                    SET cache_name = EXCLUDED.cache_name,
                        expires_at = EXCLUDED.expires_at,

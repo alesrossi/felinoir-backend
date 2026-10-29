@@ -3,6 +3,7 @@ using Felinoir.Application.Common;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Common;
 using Felinoir.Domain.Entities;
+using Felinoir.Domain.ValueObjects;
 using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.Logging;
@@ -58,12 +59,11 @@ public sealed partial class AskFelixHandler(
         if (cityId is null) return FelixErrors.InvalidRequest;
 
         // The validator has checked every message.
-        var turns = command.Messages!.Select(m =>
-        {
-            ChatTurn.TryParse(m!.Role, m.Content, out var turn);
-            return turn;
-        }).ToList();
-        var question = WithFilterContext(turns, FelixFilterFormatter.Format(command.Filters));
+        var turns = command.Messages!.Select(m => ChatTurn.TryParse(m!.Role, m.Content, out var turn)
+            ? turn
+            : throw new InvalidOperationException("AskFelixValidator lets only valid turns through.")).ToList();
+        var today = DateOnly.FromDateTime(ScreeningTime.FromInstant(time.GetUtcNow()).WallClock);
+        var question = WithFilterContext(turns, FelixFilterFormatter.Format(command.Filters, today));
 
         try
         {
@@ -94,11 +94,11 @@ public sealed partial class AskFelixHandler(
             if (Fresh(state.Current) is { } ready) return ready;
 
             var persisted = await store.LoadAsync(cityId, ct);
-            if (FelixReadiness.Decide(persisted, persistedLoaded: true, time.GetUtcNow(), DailyRebuildAt)
-                == FelixReadinessAction.UseCurrent)
+            if (persisted is not null
+                && FelixReadiness.Decide(persisted, persistedLoaded: true, time.GetUtcNow(), DailyRebuildAt)
+                    == FelixReadinessAction.UseCurrent)
             {
-                state.Current = persisted;
-                return persisted!;
+                return state.Current = persisted;
             }
 
             return state.Current = await RebuildAsync(cityId, ct);
@@ -140,9 +140,9 @@ public sealed partial class AskFelixHandler(
         string cityId, FelixContextRegistry.CityState state, FelixContext context, IReadOnlyList<ChatTurn> turns,
         CancellationToken ct)
     {
-        if (context.IsCached)
+        if (context.CacheName is { } cacheName)
         {
-            var reply = await gemini.GenerateWithCacheAsync(turns, context.CacheName!, ct);
+            var reply = await gemini.GenerateWithCacheAsync(turns, cacheName, ct);
             if (reply is not null) return reply;
 
             if (state.Current == context) state.Current = null;
