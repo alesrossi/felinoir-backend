@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Felinoir.Application.Common;
-using Felinoir.Application.Lobbies;
+using Felinoir.Domain.Lobbies;
 using Felinoir.Domain.ValueObjects;
 using Felinoir.Domain.Entities;
 using Felinoir.IntegrationTests.Support;
@@ -11,7 +11,7 @@ namespace Felinoir.IntegrationTests.Lobbies;
 
 /// <summary>
 /// Drives the <c>/lobbies</c> endpoints through the real pipeline and Postgres, including
-/// the triggers that bump <c>version</c> and the unique indexes behind the 409s.
+/// the versioning the Lobby aggregate owns and the 409s for taken names and devices.
 /// Responses are read as raw JSON to pin the wire shape the frontend relies on.
 /// </summary>
 [Collection(PostgresCollection.Name)]
@@ -183,11 +183,11 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
     [Fact]
     public async Task Unknown_malformed_and_expired_lobbies_are_not_found()
     {
-        var expired = new Lobby
-        {
-            MovieTitle = "Old", CinemaId = "nuovo-sacher", CinemaName = "Nuovo Sacher",
-            StartsAt = DateTimeOffset.UtcNow.AddHours(-49), CreatedAt = DateTimeOffset.UtcNow.AddDays(-3),
-        };
+        ParticipantName.TryCreate("Ale", out var name);
+        var expired = Lobby.Create(
+            new ScreeningSnapshot { MovieTitle = "Old", CinemaId = "nuovo-sacher", CinemaName = "Nuovo Sacher" },
+            startsAt: DateTimeOffset.UtcNow.AddHours(-49), name, DeviceHash.FromToken(Me), LobbyNote.Empty,
+            now: DateTimeOffset.UtcNow.AddDays(-3)).Value;
         await SeedAsync(expired);
         var client = Client(Me);
 
@@ -282,8 +282,8 @@ public class LobbyEndpointTests : PostgresTestBase, IAsyncLifetime
         var lobby = await Json(res);
         Assert.Equal(marco, lobby.GetProperty("meId").GetString());
         Assert.Equal([false, true], lobby.GetProperty("participants").EnumerateArray().Select(p => p.GetProperty("isMe").GetBoolean()));
-        // Clearing the old entry and taking the new one are two changes.
-        Assert.Equal(Version(joined) + 2, Version(lobby));
+        // Moving the device off one entry and onto another is one change to the lobby.
+        Assert.Equal(Version(joined) + 1, Version(lobby));
 
         var friendView = await Json(await Client(Friend).GetAsync($"/lobbies/{Id(created)}"));
         Assert.Equal(JsonValueKind.Null, friendView.GetProperty("meId").ValueKind);

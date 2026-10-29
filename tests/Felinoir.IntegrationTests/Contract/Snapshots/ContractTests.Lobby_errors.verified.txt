@@ -1,49 +1,79 @@
 ﻿### POST /lobbies   (no device token)
 > {"screeningId":1,"name":"Ale"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "missing_device"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The X-Device-Token header is missing.",
+  "error": "missing_device",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (empty device token)
 > {"screeningId":1,"name":"Ale"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "missing_device"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The X-Device-Token header is missing.",
+  "error": "missing_device",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (empty body)
 > {}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
 > {"screeningId":1,"name":""}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
 > {"screeningId":1,"name":"   "}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
 > {"screeningId":1,"name":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (40 chars is valid)
@@ -53,7 +83,7 @@ Content-Type: application/json; charset=utf-8
 Location: /lobbies/Guid_1
 {
   "id": "Guid_1",
-  "version": 2,
+  "version": 1,
   "screening": {
     "screeningId": 1,
     "available": true,
@@ -85,70 +115,109 @@ Location: /lobbies/Guid_1
 ### POST /lobbies
 > {"screeningId":1,"name":"Al\te"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
 > {"screeningId":1,"name":"Ale","note":"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_note"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A note is at most 500 characters.",
+  "error": "invalid_note",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
 > {"screeningId":999,"name":"Ale"}
 422 UnprocessableEntity
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "screening_not_found"
+  "type": "https://tools.ietf.org/html/rfc4918#section-11.2",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "error": "screening_not_found",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (no screening id)
 > {"name":"Ale"}
 422 UnprocessableEntity
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "screening_not_found"
+  "type": "https://tools.ietf.org/html/rfc4918#section-11.2",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "error": "screening_not_found",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (already started)
 > {"screeningId":4,"name":"Ale"}
 422 UnprocessableEntity
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "screening_past"
+  "type": "https://tools.ietf.org/html/rfc4918#section-11.2",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "error": "screening_past",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies   (long past)
 > {"screeningId":5,"name":"Ale"}
 422 UnprocessableEntity
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "screening_past"
+  "type": "https://tools.ietf.org/html/rfc4918#section-11.2",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "error": "screening_past",
+  "traceId": "TraceId"
 }
 
 ### GET /lobbies/not-a-guid
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### GET /lobbies/Guid_3
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### GET /lobbies/Guid_3   (unknown lobby, no device)
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "missing_device"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The X-Device-Token header is missing.",
+  "error": "missing_device",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies
@@ -158,7 +227,7 @@ Content-Type: application/json; charset=utf-8
 Location: /lobbies/Guid_4
 {
   "id": "Guid_4",
-  "version": 2,
+  "version": 1,
   "screening": {
     "screeningId": 1,
     "available": true,
@@ -190,33 +259,51 @@ Location: /lobbies/Guid_4
 ### POST /lobbies/Guid_4/participants   (same device again)
 > {"name":"Altro"}
 409 Conflict
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "already_joined"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "Conflict",
+  "status": 409,
+  "error": "already_joined",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies/Guid_4/participants   (name taken, any case)
 > {"name":"ALE"}
 409 Conflict
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "name_taken"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "Conflict",
+  "status": 409,
+  "error": "name_taken",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies/Guid_4/participants
 > {"name":""}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies/Guid_4/participants   (no name)
 > {}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies/Guid_4/participants
@@ -225,7 +312,7 @@ Content-Type: application/json; charset=utf-8
 Content-Type: application/json; charset=utf-8
 {
   "id": "Guid_4",
-  "version": 3,
+  "version": 2,
   "screening": {
     "screeningId": 1,
     "available": true,
@@ -263,63 +350,98 @@ Content-Type: application/json; charset=utf-8
 ### PATCH /lobbies/Guid_4/participants/Guid_6   (rename onto a taken name)
 > {"name":"ale"}
 409 Conflict
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "name_taken"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "Conflict",
+  "status": 409,
+  "error": "name_taken",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4/participants/Guid_6
 > {"name":""}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_name"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A name is 1 to 40 characters, without control characters.",
+  "error": "invalid_name",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4/participants/Guid_7
 > {"name":"X"}
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4/participants/not-a-guid
 > {"name":"X"}
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### DELETE /lobbies/Guid_4/participants/Guid_7
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### POST /lobbies/Guid_4/participants/Guid_7/claim
 404 NotFound
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "not_found"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "Not Found",
+  "status": 404,
+  "error": "not_found",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4
 > {"note":"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_note"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A note is at most 500 characters.",
+  "error": "invalid_note",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4   (no note)
 > {}
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "invalid_note"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "A note is at most 500 characters.",
+  "error": "invalid_note",
+  "traceId": "TraceId"
 }
 
 ### PATCH /lobbies/Guid_4   (500 chars is valid)
@@ -328,7 +450,7 @@ Content-Type: application/json; charset=utf-8
 Content-Type: application/json; charset=utf-8
 {
   "id": "Guid_4",
-  "version": 4,
+  "version": 3,
   "screening": {
     "screeningId": 1,
     "available": true,
@@ -365,8 +487,13 @@ Content-Type: application/json; charset=utf-8
 
 ### DELETE /lobbies/Guid_4/participants/Guid_5   (no device)
 400 BadRequest
-Content-Type: application/json; charset=utf-8
+Content-Type: application/problem+json
 {
-  "error": "missing_device"
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The X-Device-Token header is missing.",
+  "error": "missing_device",
+  "traceId": "TraceId"
 }
 

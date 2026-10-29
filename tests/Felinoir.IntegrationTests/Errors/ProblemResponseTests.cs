@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Felinoir.Api.Errors;
-using Felinoir.Application.Common.Results;
+using Felinoir.Domain.Common;
 using Felinoir.Infrastructure.Persistence;
 using Felinoir.IntegrationTests.Support;
 using Microsoft.AspNetCore.Builder;

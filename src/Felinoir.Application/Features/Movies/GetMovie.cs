@@ -1,5 +1,5 @@
 using Felinoir.Application.Common.Interfaces;
-using Felinoir.Application.Common.Results;
+using Felinoir.Domain.Common;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 

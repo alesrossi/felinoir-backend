@@ -16,8 +16,6 @@ public interface IApplicationDbContext
     DbSet<Movie> Movies { get; }
     DbSet<Screening> Screenings { get; }
     DbSet<FelixCache> FelixCache { get; }
-    DbSet<Lobby> Lobbies { get; }
-    DbSet<LobbyParticipant> LobbyParticipants { get; }
 
     /// <summary>For explicit transactions when one operation needs several ordered saves.</summary>
     DatabaseFacade Database { get; }

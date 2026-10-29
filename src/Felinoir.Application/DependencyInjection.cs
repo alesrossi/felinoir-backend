@@ -1,5 +1,5 @@
 using Felinoir.Application.Felix;
-using Felinoir.Application.Lobbies;
+using Felinoir.Application.Features.Lobbies;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -11,7 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ICorpusBuilder, CorpusBuilder>();
-        services.AddScoped<ILobbyService, LobbyService>();
+        services.AddScoped<LobbyViews>();
         services.TryAddSingleton(TimeProvider.System);
 
         // Request validators, run by ValidationBehavior. The mediator itself (handlers and the

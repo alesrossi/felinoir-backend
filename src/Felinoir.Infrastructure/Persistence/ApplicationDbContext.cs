@@ -1,6 +1,7 @@
 using Felinoir.Application.Common.Exceptions;
 using Felinoir.Application.Common.Interfaces;
 using Felinoir.Domain.Entities;
+using Felinoir.Domain.Lobbies;
 using Felinoir.Infrastructure.Persistence.ScraperTables;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -28,7 +29,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWor
     public DbSet<AiMatchVerdict> AiMatchVerdicts => Set<AiMatchVerdict>();
     public DbSet<FelixCache> FelixCache => Set<FelixCache>();
     public DbSet<Lobby> Lobbies => Set<Lobby>();
-    public DbSet<LobbyParticipant> LobbyParticipants => Set<LobbyParticipant>();
 
     // The read side: untracked, so nothing read through IReadDbContext can be saved.
     IQueryable<City> IReadDbContext.Cities => Cities.AsNoTracking();
@@ -36,7 +36,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWor
     IQueryable<Movie> IReadDbContext.Movies => Movies.AsNoTracking();
     IQueryable<Screening> IReadDbContext.Screenings => Screenings.AsNoTracking();
     IQueryable<Lobby> IReadDbContext.Lobbies => Lobbies.AsNoTracking();
-    IQueryable<LobbyParticipant> IReadDbContext.LobbyParticipants => LobbyParticipants.AsNoTracking();
     IQueryable<FelixCache> IReadDbContext.FelixCache => FelixCache.AsNoTracking();
 
     public override async Task<int> SaveChangesAsync(
@@ -46,12 +45,25 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWor
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
-        catch (DbUpdateException ex) when (
-            ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
+        catch (DbUpdateConcurrencyException ex)
         {
-            // Surface the constraint name without leaking Npgsql into the Application layer.
+            throw new ConcurrencyConflictException(ex);
+        }
+        catch (Exception ex) when (UniqueViolation(ex) is { } pg)
+        {
+            // Surface the constraint name without leaking Npgsql into the Application layer. A
+            // deferred constraint fails at commit, so the error isn't always a DbUpdateException.
             throw new UniqueConstraintViolationException(pg.ConstraintName, ex);
         }
+    }
+
+    public void DiscardChanges() => ChangeTracker.Clear();
+
+    private static PostgresException? UniqueViolation(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+            if (e is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg) return pg;
+        return null;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

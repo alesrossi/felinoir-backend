@@ -18,13 +18,13 @@ public class MovieQueryTests(PostgresFixture fixture) : PostgresTestBase(fixture
         return await new GetMoviesHandler(db).Handle(query, default);
     }
 
-    private async Task<Felinoir.Application.Common.Results.Result<MovieResponse>> GetById(int id)
+    private async Task<Felinoir.Domain.Common.Result<MovieResponse>> GetById(int id)
     {
         await using var db = Fixture.NewDbContext();
         return await new GetMovieByIdHandler(db).Handle(new GetMovieByIdQuery(id), default);
     }
 
-    private async Task<Felinoir.Application.Common.Results.Result<MovieResponse>> GetBySlug(string slug)
+    private async Task<Felinoir.Domain.Common.Result<MovieResponse>> GetBySlug(string slug)
     {
         await using var db = Fixture.NewDbContext();
         return await new GetMovieBySlugHandler(db).Handle(new GetMovieBySlugQuery(slug), default);

@@ -1,4 +1,4 @@
-using Felinoir.Application.Common.Results;
+using Felinoir.Domain.Common;
 using FluentValidation;
 using Mediator;
 

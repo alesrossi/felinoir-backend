@@ -1,4 +1,4 @@
-namespace Felinoir.Application.Common.Results;
+namespace Felinoir.Domain.Common;
 
 /// <summary>What kind of failure an <see cref="Error"/> is; the API maps each kind to one HTTP status.</summary>
 public enum ErrorKind
@@ -20,7 +20,7 @@ public enum ErrorKind
 }
 
 /// <summary>
-/// A business failure, returned (not thrown) by handlers. <see cref="Code"/> is the stable,
+/// A business failure, returned (not thrown) by aggregates and handlers. <see cref="Code"/> is the stable,
 /// machine-readable code clients switch on (the API's <c>error</c> field, e.g. <c>name_taken</c>);
 /// <see cref="Detail"/> is optional human-readable text.
 /// </summary>

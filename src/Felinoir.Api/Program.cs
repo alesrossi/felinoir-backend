@@ -44,6 +44,7 @@ builder.Services.AddMediator(options =>
     [
         typeof(LoggingBehavior<,>),
         typeof(ValidationBehavior<,>),
+        typeof(ConflictRetryBehavior<,>),
         typeof(UnitOfWorkBehavior<,>),
     ];
 });

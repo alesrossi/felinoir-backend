@@ -1,4 +1,4 @@
-namespace Felinoir.Application.Common.Results;
+namespace Felinoir.Domain.Common;
 
 /// <summary>
 /// A result type that can be created from an <see cref="Error"/>, so a pipeline behaviour can

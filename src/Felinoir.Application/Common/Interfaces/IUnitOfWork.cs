@@ -7,8 +7,12 @@ namespace Felinoir.Application.Common.Interfaces;
 public interface IUnitOfWork
 {
     /// <summary>
-    /// Throws <see cref="Exceptions.UniqueConstraintViolationException"/> when a unique constraint
-    /// or index is violated.
+    /// Throws <see cref="Exceptions.ConcurrencyConflictException"/> when an aggregate changed since it
+    /// was loaded, and <see cref="Exceptions.UniqueConstraintViolationException"/> when a unique
+    /// constraint or index is violated.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Forgets every loaded and changed aggregate, so the request can start over on fresh data.</summary>
+    void DiscardChanges();
 }

@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using Felinoir.Application.Common;
 using Felinoir.Application.Common.Behaviors;
+using Felinoir.Application.Common.Exceptions;
 using Felinoir.Application.Common.Interfaces;
-using Felinoir.Application.Common.Results;
+using Felinoir.Domain.Common;
 using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.Logging;
@@ -117,6 +118,62 @@ public class PipelineBehaviorTests
             await behavior.Handle(new RenameCommand("Ale"), Handler(_ => throw new InvalidOperationException()), default));
 
         unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── Conflict retry ─────────────────────────────────────────────────────────
+
+    private static readonly Exception LostRace = new ConcurrencyConflictException(new InvalidOperationException());
+
+    [Fact]
+    public async Task A_command_that_loses_a_race_runs_once_more_on_fresh_data()
+    {
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var behavior = new ConflictRetryBehavior<RenameCommand, Result<string>>(unitOfWork.Object);
+        var calls = 0;
+
+        var result = await behavior.Handle(new RenameCommand("Ale"), Handler(c =>
+            ++calls == 1 ? throw LostRace : (Result<string>)c.Name), default);
+
+        Assert.Equal("Ale", result.Value);
+        Assert.Equal(2, calls);
+        unitOfWork.Verify(u => u.DiscardChanges(), Times.Once);
+    }
+
+    [Fact]
+    public async Task A_command_that_loses_twice_fails_with_a_conflict()
+    {
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var behavior = new ConflictRetryBehavior<RenameCommand, Result<string>>(unitOfWork.Object);
+        var calls = 0;
+
+        var result = await behavior.Handle(new RenameCommand("Ale"), Handler(_ =>
+        {
+            calls++;
+            throw new UniqueConstraintViolationException("lobby_participants_name_uniq", new InvalidOperationException());
+        }), default);
+
+        Assert.Equal(2, calls);
+        Assert.Equal("conflict", result.Error!.Code);
+        Assert.Equal(ErrorKind.Conflict, result.Error.Kind);
+        unitOfWork.Verify(u => u.DiscardChanges(), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Other_exceptions_are_not_retried()
+    {
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var behavior = new ConflictRetryBehavior<RenameCommand, Result<string>>(unitOfWork.Object);
+        var calls = 0;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await behavior.Handle(new RenameCommand("Ale"), Handler(_ =>
+            {
+                calls++;
+                throw new InvalidOperationException();
+            }), default));
+
+        Assert.Equal(1, calls);
+        unitOfWork.Verify(u => u.DiscardChanges(), Times.Never);
     }
 
     // ── Logging ────────────────────────────────────────────────────────────────

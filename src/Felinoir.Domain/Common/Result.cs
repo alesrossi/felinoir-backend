@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Felinoir.Application.Common.Results;
+namespace Felinoir.Domain.Common;
 
 /// <summary>
 /// The outcome of an operation that returns nothing: success, or an <see cref="Results.Error"/>.

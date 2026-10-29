@@ -14,7 +14,7 @@ public class CinemaQueryTests(PostgresFixture fixture) : PostgresTestBase(fixtur
         return await new GetCinemasHandler(db).Handle(new GetCinemasQuery(city), default);
     }
 
-    private async Task<Felinoir.Application.Common.Results.Result<CinemaResponse>> GetById(string id)
+    private async Task<Felinoir.Domain.Common.Result<CinemaResponse>> GetById(string id)
     {
         await using var db = Fixture.NewDbContext();
         return await new GetCinemaByIdHandler(db).Handle(new GetCinemaByIdQuery(id), default);

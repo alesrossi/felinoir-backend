@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Felinoir.Application.Lobbies;
+namespace Felinoir.Application.Features.Lobbies;
 
 // Response shapes of the /lobbies endpoints. Unlike the rest of the API, nullable fields are
 // always serialized (as null) rather than omitted: the frontend checks e.g. meId === null.

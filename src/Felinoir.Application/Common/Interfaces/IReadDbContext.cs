@@ -1,4 +1,5 @@
 using Felinoir.Domain.Entities;
+using Felinoir.Domain.Lobbies;
 
 namespace Felinoir.Application.Common.Interfaces;
 
@@ -14,6 +15,5 @@ public interface IReadDbContext
     IQueryable<Movie> Movies { get; }
     IQueryable<Screening> Screenings { get; }
     IQueryable<Lobby> Lobbies { get; }
-    IQueryable<LobbyParticipant> LobbyParticipants { get; }
     IQueryable<FelixCache> FelixCache { get; }
 }

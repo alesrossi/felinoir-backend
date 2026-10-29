@@ -1,4 +1,5 @@
 using Felinoir.Application.Common.Interfaces;
+using Felinoir.Application.Features.Lobbies;
 using Felinoir.Application.Felix;
 using Felinoir.Infrastructure.Configuration;
 using Felinoir.Infrastructure.Felix;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IReadDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ILobbyRepository, LobbyRepository>();
 
         // No pg_cron on the server, so expired lobbies are deleted from here.
         services.AddHostedService<ExpiredLobbyCleanupService>();
