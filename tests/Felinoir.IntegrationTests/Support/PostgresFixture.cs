@@ -6,6 +6,7 @@ using DotNet.Testcontainers.Containers;
 using Felinoir.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Respawn;
 
 namespace Felinoir.IntegrationTests.Support;
 
@@ -34,6 +35,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     private string _connectionString = null!;
     private IContainer _container = null!;
     private DbContextOptions<ApplicationDbContext> _options = null!;
+    private Respawner _respawner = null!;
     private PostgresApiFactory? _api;
 
     public async Task InitializeAsync()
@@ -65,8 +67,20 @@ public sealed class PostgresFixture : IAsyncLifetime
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        await using var db = NewDbContext();
-        await db.Database.MigrateAsync();
+        await using (var db = NewDbContext())
+            await db.Database.MigrateAsync();
+
+        // Built after migrating, so it sees every table. Identity sequences are reset too,
+        // because tests seed rows with fixed ids.
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+        _respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
+        {
+            DbAdapter = DbAdapter.Postgres,
+            SchemasToInclude = ["public"],
+            TablesToIgnore = ["__EFMigrationsHistory"],
+            WithReseed = true,
+        });
     }
 
     /// <summary>Polls a real connection until Postgres accepts it (or we give up).</summary>
@@ -103,9 +117,9 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <summary>Clears all data so each test starts from an empty database.</summary>
     public async Task ResetAsync()
     {
-        await using var db = NewDbContext();
-        await db.Database.ExecuteSqlRawAsync(
-            "TRUNCATE screenings, movies, cinemas, felix_cache, tmdb_lookup_cache, ai_match_verdicts, lobbies, lobby_participants RESTART IDENTITY CASCADE;");
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+        await _respawner.ResetAsync(conn);
     }
 
     private static int GetFreeTcpPort()
