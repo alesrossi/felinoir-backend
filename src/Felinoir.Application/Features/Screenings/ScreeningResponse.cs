@@ -12,18 +12,18 @@ namespace Felinoir.Application.Features.Screenings;
 /// </summary>
 public sealed record ScreeningResponse
 {
-    public int Id { get; init; }
-    public int MovieId { get; init; }
-    public string CinemaId { get; init; } = default!;
-    public string Datetime { get; init; } = default!;
+    public required int Id { get; init; }
+    public required int MovieId { get; init; }
+    public required string CinemaId { get; init; }
+    public required string Datetime { get; init; }
     public string? Hall { get; init; }
-    public bool Is3D { get; init; }
-    public bool IsOV { get; init; }
+    public required bool Is3D { get; init; }
+    public required bool IsOV { get; init; }
     public string? SubtitleLanguage { get; init; }
     public string? BookingUrl { get; init; }
     public string? Meta { get; init; }
-    public string CreatedAt { get; init; } = default!;
-    public string UpdatedAt { get; init; } = default!;
+    public required string CreatedAt { get; init; }
+    public required string UpdatedAt { get; init; }
     public MovieResponse? Movie { get; init; }
     public CinemaResponse? Cinema { get; init; }
 

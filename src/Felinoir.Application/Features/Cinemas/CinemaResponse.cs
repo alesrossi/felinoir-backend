@@ -9,16 +9,16 @@ namespace Felinoir.Application.Features.Cinemas;
 /// </summary>
 public sealed record CinemaResponse
 {
-    public string Id { get; init; } = default!;
-    public string Name { get; init; } = default!;
+    public required string Id { get; init; }
+    public required string Name { get; init; }
     public string? Chain { get; init; }
     public string? Address { get; init; }
-    public string City { get; init; } = default!;
-    public string Country { get; init; } = default!;
-    public string Website { get; init; } = default!;
-    public string ScheduleUrl { get; init; } = default!;
-    public string CreatedAt { get; init; } = default!;
-    public string UpdatedAt { get; init; } = default!;
+    public required string City { get; init; }
+    public required string Country { get; init; }
+    public required string Website { get; init; }
+    public required string ScheduleUrl { get; init; }
+    public required string CreatedAt { get; init; }
+    public required string UpdatedAt { get; init; }
 
     /// <summary>The mapping, as an expression EF translates (joining the city for its name).</summary>
     public static readonly Expression<Func<Cinema, CinemaResponse>> Projection = c => new CinemaResponse

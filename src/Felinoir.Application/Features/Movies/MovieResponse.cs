@@ -9,8 +9,8 @@ namespace Felinoir.Application.Features.Movies;
 /// </summary>
 public sealed record MovieResponse
 {
-    public int Id { get; init; }
-    public string Title { get; init; } = default!;
+    public required int Id { get; init; }
+    public required string Title { get; init; }
     public string? OriginalTitle { get; init; }
     public string? Director { get; init; }
     public int? DurationMinutes { get; init; }
@@ -64,8 +64,8 @@ public sealed record MovieResponse
     public string? MetacriticScore { get; init; }
     public string? Awards { get; init; }
     public string? OmdbEnrichedAt { get; init; }
-    public string CreatedAt { get; init; } = default!;
-    public string UpdatedAt { get; init; } = default!;
+    public required string CreatedAt { get; init; }
+    public required string UpdatedAt { get; init; }
 
     /// <summary>The mapping, as an expression EF translates into a SELECT of exactly these columns.</summary>
     public static readonly Expression<Func<Movie, MovieResponse>> Projection = m => new MovieResponse
