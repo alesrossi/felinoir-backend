@@ -145,7 +145,28 @@ refactor starts. Multi-city support is in place under the hood; Rome is the only
 - **Not applied to the local database:** the running dev images still read and write
   `cinemas.city`; the migrator applies `Cities` when the new stack starts.
 
-## Step 3 — Foundations (ADR 0002)
+## Step 3 — Foundations (ADR 0002) — done 2026-10-29
+
+As built (details below are the original plan, which held):
+
+- **Build:** `Directory.Build.props` (warnings as errors, analysers `latest-recommended`),
+  `Directory.Packages.props`, `.editorconfig`. The NuGet audit flagged two high-severity
+  advisories, fixed by upgrading `Microsoft.AspNetCore.OpenApi` (10.0.14) and Testcontainers
+  (4.16.0). Logging uses source-generated `[LoggerMessage]` methods.
+- **Observability:** `ObservabilityExtensions` (Serilog + ECS, OpenTelemetry, `X-Trace-Id`).
+  Verified by running the API in both environments; `traceparent` is continued.
+- **Errors:** `Error` / `Result<T>` in Application, `ErrorResults` and `ProblemDetailsSetup` in
+  Api. The frontend reads errors with `res.json()` / `data.error` and passes `Content-Type`
+  through, so `application/problem+json` is safe. Existing endpoints keep their bodies until
+  their slice is migrated; empty framework errors already get problem bodies.
+- **Mediator:** registered in the Api (where its source generator runs) with **scoped**
+  lifetime; behaviours fail through `IFailureResult<T>` (static abstract, no reflection).
+  `/health` is the first slice and proves the wiring.
+- **Deferred:** dispatching domain events. `AggregateRoot` records them; the dispatcher is built
+  with the first event that has a handler.
+- **Not committed:** `appsettings.Development.json` (debug log levels) is excluded by the repo's
+  `.gitignore` rule for `appsettings*.json`.
+
 
 - **Build hygiene:** `Directory.Build.props` (nullable, `TreatWarningsAsErrors`, .NET
   analyzers at `Recommended`, implicit usings), `.editorconfig`, central package management
