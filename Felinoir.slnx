@@ -4,6 +4,7 @@
     <Project Path="src/Felinoir.Application/Felinoir.Application.csproj" />
     <Project Path="src/Felinoir.Domain/Felinoir.Domain.csproj" />
     <Project Path="src/Felinoir.Infrastructure/Felinoir.Infrastructure.csproj" />
+    <Project Path="src/Felinoir.Migrator/Felinoir.Migrator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Felinoir.IntegrationTests/Felinoir.IntegrationTests.csproj" />

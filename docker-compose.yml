@@ -21,6 +21,19 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── Schema migrator ──────────────────────────────────────────────────────────
+  # One-shot: brings the database to the current schema, then exits (ADR 0001).
+  # The backend and the scraper only start once it has succeeded.
+  migrator:
+    image: alesrossi/cinema-backend-migrator:latest
+    restart: "no"
+    network_mode: host
+    environment:
+      DATABASE_URL: postgres://cinema:cinema@127.0.0.1:5438/cinema
+    depends_on:
+      db:
+        condition: service_healthy
+
   # ── REST API ─────────────────────────────────────────────────────────────────
   backend:
     image: alesrossi/cinema-backend:latest
@@ -32,8 +45,8 @@ services:
       TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     depends_on:
-      db:
-        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/4001 && printf \"GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'"]
       interval: 10s
@@ -141,8 +154,8 @@ services:
       USE_PROXY: ${USE_PROXY:-false}
       FLARESOLVERR_URL: http://localhost:8191/v1
     depends_on:
-      db:
-        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     volumes:
       - scraper_logs:/app/logs
 

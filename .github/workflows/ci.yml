@@ -9,6 +9,7 @@ on:
 
 env:
   IMAGE: alesrossi/cinema-backend
+  MIGRATOR_IMAGE: alesrossi/cinema-backend-migrator
 
 jobs:
   test:
@@ -65,5 +66,27 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Same build, `migrator` stage: the one-shot schema migrator (ADR 0001). Tagged like the
+      # API, so an API release and the migrations it expects always ship together.
+      - name: Migrator image tags
+        id: migrator-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.MIGRATOR_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+
+      - name: Build & push migrator
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: migrator
+          push: true
+          tags: ${{ steps.migrator-meta.outputs.tags }}
+          labels: ${{ steps.migrator-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
