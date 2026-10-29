@@ -113,33 +113,52 @@ because the version guard already stops a scraper from running on the wrong sche
 ## Production cutover (once the backend refactor is finished)
 
 Production has **no `__EFMigrationsHistory` table** (checked 2026-10-29). Its whole schema was
-created by the scrapers' bootstrap, and EF has never recorded a migration there. The schema does
-already contain everything the backend's `Baseline` migration creates; the backend's drift test
-proves this against `tests/schema/production.sql`. The migrator adopts it on its first run.
+created by the scrapers' bootstrap, and EF has never recorded a migration there. It does contain
+everything the backend's `Baseline` migration creates (the drift test proves this against
+`tests/schema/production.sql`), so the migrator adopts it on its first run and then applies
+`NormaliseKeys`, `Cities` and `LobbyVersionInDomain`.
 
-1. **Freeze:** pause the daily scraper cron (`server/daily-report.sh`).
-2. **Back up:** take a `pg_dump` (data and schema) of production and keep it off the server.
-3. **Rehearse:** restore the dump into a local Postgres, run the new migrator against it (it
-   adopts the database by recording `Baseline` as applied, then applies the later migrations),
-   then
-   run the new API and one scraper pass against the result. Check the characterisation
-   snapshots and the drift test. Fix and repeat until it's clean.
-4. **Release images:** the backend API and the migrator are tagged with the same version. The
-   scraper release has `REQUIRED_MIGRATION` set to the backend's latest migration.
-5. **Deploy, in order:** the migrator (one-shot; adopts production on its first run), then the
-   API, then the scraper image (with the
-   updated `cinemas.yml`). In `server/docker-compose.yml`, `api` and `cinema-scraper` depend on
-   `migrator` with `condition: service_completed_successfully`.
-6. **Verify:**
-   - `/health`, `/movies`, `/cinemas` (every cinema has `city: "Roma"`) and `/screenings?city=rome`.
-   - A Felix chat.
-   - Create, join and poll a lobby.
-   - Run the scraper manually once (`docker compose run --rm cinema-scraper`).
-7. **Resume** the cron.
+### Before the day
 
-**Rollback:** restore the backup and redeploy the previous image tags (`main` for the API, the
-previous scraper tag). The cutover is all at once, so rolling back means restoring the
-database, not running `Down()` migrations.
+1. **Scrapers ready**: the changes above are released as an image tag, with
+   `REQUIRED_MIGRATION = "20261029110416_LobbyVersionInDomain"` (the backend's latest migration) and
+   `city: rome` on every cinema in `cinemas.yml`.
+2. **Backend released**: `refactoring` merged into `main`; CI has published
+   `alesrossi/cinema-backend` and `alesrossi/cinema-backend-migrator` with the same tags (the Docker
+   Hub repository for the migrator must exist or be creatable by the CI token).
+3. **Rehearsed locally** on a restored copy of production (`alignment.md`, section 5), clean.
+
+### On the server (`cd` to the directory with `server/docker-compose.yml`)
+
+1. **Freeze**: disable the daily `daily-report.sh` cron entry.
+2. **Note the running images** for a rollback, since `latest` is about to move:
+   `docker image inspect --format '{{index .RepoDigests 0}}' alesrossi/cinema-backend:latest alesrossi/cinema-scrapers:latest`
+3. **Back up**, and copy the file off the server:
+   `docker compose exec -T db pg_dump -U cinema -d cinema -Fc > felinoir-$(date +%F).dump`
+4. **Update** `docker-compose.yml` from the repo (it adds `cinema-migrator` and the `depends_on`
+   changes), then `docker compose pull cinema-migrator cinema-backend cinema-scraper`.
+5. **Migrate**, watching the output: `docker compose run --rm cinema-migrator`. Expect
+   *"Adopting a database built by the scrapers: recording 20261029083355_Baseline as applied"*,
+   then *"Applying 3 migration(s): …NormaliseKeys, …Cities, …LobbyVersionInDomain"*, then
+   *"Database schema is up to date"* and exit code 0. A second run only prints *"up to date"*.
+6. **Start the API**: `docker compose up -d cinema-backend` (the frontends follow its health check).
+7. **Verify**:
+   - `/health`; `/cinemas` (every `city` is `"Roma"`); `/screenings?city=rome&withRelations=true`;
+     `/movies/slug/<a real slug>`; every response has `X-Trace-Id`.
+   - On felinoir.it: the home page, a movie page, a cinema page, a Felix question, and a lobby
+     (create, join from a second browser, claim, poll).
+   - `docker compose logs cinema-backend` shows one JSON line per request.
+8. **Scrape once by hand**: `docker compose run --rm cinema-scraper`. It must start (the version
+   guard passes), issue no DDL, and leave cinemas with `city_id = 'rome'` and coordinates:
+   `docker compose exec db psql -U cinema -d cinema -c "select city_id, count(*), count(latitude), sum(open_air::int) from cinemas group by 1"`
+9. **Resume** the cron.
+
+### Rollback
+
+Stop `cinema-backend`, restore the backup (`pg_restore --clean --if-exists -U cinema -d cinema`
+from the dump), pin the image digests noted in step 2 in `docker-compose.yml`, remove the
+`cinema-migrator` service and its `depends_on`, and start again. Rolling back means restoring the
+database, not running `Down()` migrations: the cutover is all at once.
 
 ## Afterwards: changing the schema
 

@@ -1,5 +1,9 @@
 # Rework Explorations — DDD and Functional
 
+> **Historical.** Written before the rework; the decisions taken are in `docs/REWORK-PLAN.md` and
+> `docs/adr/`, and the code now follows `docs/ARCHITECTURE.md`. Several conclusions below (for
+> example "no repositories") were deliberately overruled.
+
 Two hypothetical reworks of the Felinoir backend, written as thought experiments.
 **No code in this repository has been changed.** Everything below is a sketch of what
 the same behaviour would look like under a different set of organising principles.

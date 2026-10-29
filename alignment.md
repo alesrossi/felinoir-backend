@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-29, after rework step 6.
+**Last updated:** 2026-10-29, after rework step 7 (the rework is complete).
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -55,7 +55,8 @@ Full strategy and code sketches: `docs/SCRAPERS-SCHEMA-MIGRATION.md`.
       then jump by two per change).
 - [ ] **Schema version guard** at pool creation:
       `SELECT 1 FROM "__EFMigrationsHistory" WHERE migration_id = $1` (snake_case column), with
-      `REQUIRED_MIGRATION` set to the backend's latest migration (today `20261029090606_Cities`).
+      `REQUIRED_MIGRATION` set to the backend's latest migration (today
+      `20261029110416_LobbyVersionInDomain`).
 - [ ] **`cinemas.yml`**: add `city: rome` to every cinema (the Velletri, Tivoli, Frascati… cinemas
       included). It becomes the only copy the backend relies on.
 - [ ] **`sync-cinemas.ts`**: write `city_id`, `latitude`, `longitude`, `open_air` from the yml; stop
@@ -170,7 +171,8 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 
 ## 5. Testing the final images locally
 
-Before the production cutover (`docs/SCRAPERS-SCHEMA-MIGRATION.md`, "Production cutover").
+Before the production cutover (`docs/SCRAPERS-SCHEMA-MIGRATION.md`, "Production cutover", which has
+the server runbook and the rollback).
 
 1. **Images**: `docker build -t cinema-backend:test .` and
    `docker build --target migrator -t cinema-backend-migrator:test .`; scrapers and frontend images

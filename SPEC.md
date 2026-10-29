@@ -8,16 +8,33 @@ Reference document for reimplementing this backend in any language/framework whi
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | Postgres connection string |
-| `GEMINI_API_KEY` | Yes (Felix) | Google Gemini API key |
+| `DATABASE_URL` | Yes | Postgres connection string (URI form); also used by the migrator |
+| `GEMINI_API_KEY` | Yes (Felix) | Google Gemini API key; without it `/felix/chat` answers 503 |
 | `TMDB_READ_ACCESS_TOKEN` | Scrapers only | Not needed by the HTTP server |
 | `PORT` | No | HTTP port, default `3001` |
+| `Felix__DailyRebuildAt` | No | Italian time (`HH:mm`, default `05:00`) after which Felix rebuilds its corpus; after the nightly scrape |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | Exports traces and metrics over OTLP (e.g. to Elastic APM) when set |
+| `Serilog__…` | No | Log levels and sinks, e.g. `Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=Information` |
 
 ---
 
 ## REST API
 
 All responses are JSON. CORS is enabled for all origins (`*`).
+
+**Errors** are RFC 7807 problem details (`application/problem+json`) with two extra members:
+`error`, the machine-readable code clients switch on (the endpoints below list them), and
+`traceId`. `{ "error": "<code>" }` is therefore still a subset of every error body. Validation
+errors add a human-readable `detail`. Framework errors (malformed JSON, an unparseable query
+parameter, an unknown route) use `error` codes `bad_request`, `not_found`, `method_not_allowed`;
+an unexpected failure is `500` with `internal_error`.
+
+**Tracing**: every response carries `X-Trace-Id` (exposed by CORS), the W3C trace id of the request.
+A W3C `traceparent` request header is continued, so a caller's trace includes the backend's spans.
+
+**Cities**: `city` parameters take a city id (`rome`) or its display name (`Roma`), ignoring case.
+Without one, results cover every city; an unknown city gives an empty list (`/felix/chat`: `400`).
+Rome is the only city today.
 
 ### `GET /health`
 
@@ -37,6 +54,9 @@ Returns all movies, ordered by recency.
 |---|---|---|---|
 | `limit` | integer | 500 | 2000 |
 | `offset` | integer | 0 | — |
+| `city` | string | — | Only movies with a screening in that city |
+
+Out-of-range `limit` / `offset` values are clamped, never rejected.
 
 **Response** — array of `Movie` objects (see [Entities](#entities)).
 
@@ -46,8 +66,8 @@ Returns all movies, ordered by recency.
 
 Returns a single movie by numeric id.
 
-**Response** — `Movie` object, or `404 { "error": "Not found" }`.  
-Returns `400 { "error": "Invalid id" }` if `:id` is not a number.
+**Response** — `Movie` object, or `404` with `error: "Not found"`.
+Returns `400` with `error: "Invalid id"` if `:id` is not a number.
 
 ---
 
@@ -55,7 +75,7 @@ Returns `400 { "error": "Invalid id" }` if `:id` is not a number.
 
 Returns a single movie by its URL slug.
 
-**Response** — `Movie` object, or `404 { "error": "Not found" }`.
+**Response** — `Movie` object, or `404` with `error: "Not found"`.
 
 > **Important:** this route must be registered **before** `/:id` or routers that match `:id` greedily will treat `"slug"` as an id.
 
@@ -71,9 +91,9 @@ Returns screenings with optional filtering and pagination.
 |---|---|---|
 | `cinemaId` | string | Filter by cinema slug |
 | `movieId` | integer | Filter by movie id |
-| `city` | string | Filter by city |
-| `from` | ISO 8601 datetime | Lower bound on `datetime` (inclusive) |
-| `to` | ISO 8601 datetime | Upper bound on `datetime` (inclusive) |
+| `city` | string | Filter by the city the screening's cinema is listed under |
+| `from` | datetime | Lower bound on `datetime` (inclusive), in Italian time; a value with `Z` or an offset is converted to Italian time first |
+| `to` | datetime | Upper bound on `datetime` (inclusive), same rules |
 | `withRelations` | `"true"` | Include nested `movie` and `cinema` objects on each result |
 | `limit` | integer | Default 50 000, max 100 000 |
 | `offset` | integer | Default 0 |
@@ -84,7 +104,7 @@ Returns screenings with optional filtering and pagination.
 
 ### `GET /cinemas`
 
-Returns all cinemas from the database.
+Returns all cinemas, ordered by name; with `city`, only the cinemas listed under that city.
 
 **Response** — array of `Cinema` objects.
 
@@ -94,7 +114,7 @@ Returns all cinemas from the database.
 
 Returns a single cinema by its string id (slug).
 
-**Response** — `Cinema` object, or `404 { "error": "Not found" }`.
+**Response** — `Cinema` object, or `404` with `error: "Not found"`.
 
 ---
 
@@ -120,8 +140,9 @@ Sends a chat message to Felix (Gemini-backed cinema assistant).
 }
 ```
 
-`messages` — required, non-empty array of `{ role: "user" | "assistant", content: string }`.  
+`messages` — required, non-empty array of `{ role: "user" | "assistant", content: string }`.
 `filters` — optional; active filters from the UI, appended as context to the last user message.
+`?city=` — optional query parameter: the city Felix answers about (Rome by default).
 
 **Response**
 
@@ -131,17 +152,20 @@ Sends a chat message to Felix (Gemini-backed cinema assistant).
 
 **Error responses**
 
-| Status | Body | Condition |
+The `error` texts are shown to users as they are.
+
+| Status | `error` | Condition |
 |---|---|---|
-| 400 | `{ "error": "Richiesta non valida." }` | Missing/malformed messages |
-| 503 | `{ "error": "Felix non è configurato al momento." }` | `GEMINI_API_KEY` not set |
-| 500 | `{ "error": "Qualcosa è andato storto. Riprova tra qualche secondo." }` | Gemini call failed |
+| 400 | `Richiesta non valida.` | Missing/malformed messages, unknown city |
+| 400 | `bad_request` | The body is not JSON |
+| 503 | `Felix non è configurato al momento.` | `GEMINI_API_KEY` not set |
+| 500 | `Qualcosa è andato storto. Riprova tra qualche secondo.` | Gemini call failed (after retries) |
 
 ---
 
 ### Lobbies
 
-Shareable group outings to a screening (`/e/<id>` on the frontend). Every request must carry `X-Device-Token`, which the Next.js proxy sets from its `felinoir_device` cookie. Only `sha256(token)` is stored, and it decides `isMe` / `meId`. Every change bumps `version` through database triggers and returns the full lobby (`200`). Lobbies expire 48 h after their screening starts and are then `404`. Editing stays open until they expire.
+Shareable group outings to a screening (`/e/<id>` on the frontend). Every request must carry `X-Device-Token`, which the Next.js proxy sets from its `felinoir_device` cookie. Only `sha256(token)` is stored, and it decides `isMe` / `meId`. Every change increments `version` by exactly 1 (a new lobby is at 1; a change that alters nothing, such as claiming your own entry, keeps it) and returns the full lobby (`200`). Clients only rely on it increasing. Of two changes made to a lobby at the same moment, the second is retried once on fresh data, else answered with `409 conflict`. Lobbies expire 48 h after their screening starts and are then `404`. Editing stays open until they expire.
 
 | Method & path | Body | Does |
 |---|---|---|
@@ -183,7 +207,7 @@ Shareable group outings to a screening (`/e/<id>` on the frontend). Every reques
 
 Unlike the rest of the API, nullable fields here are sent as `null`, never omitted.
 
-**Validation and errors** (`{ "error": "<code>" }`): names are trimmed, 1–40 characters, with no control characters. Notes are at most 500 characters.
+**Validation and errors** (the `error` member): names are trimmed, 1–40 characters, with no control characters. Notes are at most 500 characters.
 
 | Status | Code | When |
 |---|---|---|
@@ -192,6 +216,7 @@ Unlike the rest of the API, nullable fields here are sent as `null`, never omitt
 | 404 | `not_found` | Unknown, malformed or expired lobby; unknown participant |
 | 409 | `name_taken` | Name already in the lobby (case-insensitive), on join or rename |
 | 409 | `already_joined` | This device already has an entry |
+| 409 | `conflict` | Lost a race with a concurrent change twice in a row (rare) |
 | 422 | `screening_not_found` | `POST /lobbies` with an unknown screening |
 | 422 | `screening_past` | `POST /lobbies` for a screening that has started |
 
@@ -209,7 +234,7 @@ All fields use **camelCase** in JSON responses, mapped from snake_case columns.
   name: string
   chain?: string
   address?: string
-  city: string
+  city: string            // name of the city it is listed under, e.g. "Roma" (not the town in its address)
   country: string         // default "IT"
   website: string
   scheduleUrl: string
@@ -310,7 +335,7 @@ Photo URL: `https://image.tmdb.org/t/p/w185{profile_path}` (other sizes: `w45`, 
   id: number
   movieId: number
   cinemaId: string
-  datetime: string        // ISO 8601 UTC, e.g. "2026-06-22T20:30:00Z"
+  datetime: string        // Italian wall clock, no offset, e.g. "2026-06-22T20:30:00" (one scraper omits seconds)
   hall?: string
   is3D: boolean
   isOV: boolean           // original version (no dubbing)
@@ -331,7 +356,24 @@ Photo URL: `https://image.tmdb.org/t/p/w185{profile_path}` (other sizes: `w45`, 
 
 ## Database Schema
 
-Postgres 16. All timestamps stored as `TEXT` in ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`), except in `lobbies` / `lobby_participants`, which use `TIMESTAMPTZ`.
+Postgres 16 with the `pg_trgm` extension. The schema is owned by this repository's EF Core
+migrations (ADR 0001), applied by the one-shot migrator before the API and the scrapers start; the
+scrapers issue no DDL. `tests/schema/production.sql` is the schema the scrapers had built, which the
+`Baseline` migration reproduces exactly.
+
+Timestamps are `TEXT` in ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`), except `screenings.datetime` (Italian
+wall clock, no offset) and `lobbies` / `lobby_participants`, which use `TIMESTAMPTZ`.
+
+### `cities`
+
+Reference data, added by migrations only. Every cinema is listed under one city.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | slug, e.g. `rome` |
+| `name` | TEXT NOT NULL | display name, e.g. `Roma` |
+| `created_at` | TEXT NOT NULL | default now |
+| `updated_at` | TEXT NOT NULL | default now |
 
 ### `cinemas`
 
@@ -341,14 +383,17 @@ Postgres 16. All timestamps stored as `TEXT` in ISO 8601 UTC (`YYYY-MM-DDThh:mm:
 | `name` | TEXT NOT NULL | |
 | `chain` | TEXT | |
 | `address` | TEXT | |
-| `city` | TEXT NOT NULL | |
+| `city_id` | TEXT NOT NULL | FK → cities(id) ON DELETE RESTRICT; the city it is listed under |
 | `country` | TEXT NOT NULL | default `'IT'` |
 | `website` | TEXT NOT NULL | |
 | `schedule_url` | TEXT NOT NULL | |
 | `created_at` | TEXT NOT NULL | |
 | `updated_at` | TEXT NOT NULL | |
+| `latitude` | DOUBLE PRECISION | from the scrapers' `cinemas.yml` |
+| `longitude` | DOUBLE PRECISION | |
+| `open_air` | BOOLEAN NOT NULL | default false; summer arenas, tagged `[Open Air]` by Felix |
 
-Index: `idx_cinemas_city` on `city`.
+Index: `idx_cinemas_city_id` on `city_id`.
 
 ### `movies`
 
@@ -412,7 +457,14 @@ Index: `idx_cinemas_city` on `city`.
 | `created_at` | TEXT NOT NULL | |
 | `updated_at` | TEXT NOT NULL | |
 
-Unique index: `(title, COALESCE(original_title, ''))` — deduplication key used by scrapers.
+Four more columns are used only by the scrapers' matching: `canonical_title` (TEXT),
+`tmdb_match_attempts` (INTEGER NOT NULL, default 0), `tmdb_last_attempt_at` (TEXT) and `has_matches`
+(TEXT NOT NULL, default `'FailedMatch'`, CHECK in `FailedMatch` / `NoMatch` / `FoundMatch`). The API
+never returns them.
+
+Unique index `idx_movies_unique` on `(title, COALESCE(original_title, ''))` — deduplication key used by
+scrapers. Partial unique indexes on `slug`, `tmdb_id`, `imdb_id` (where not null); indexes on `title`,
+`external_id`, and a trigram GIN index `idx_movies_canonical_trgm` on `canonical_title`.
 
 ### `screenings`
 
@@ -421,7 +473,7 @@ Unique index: `(title, COALESCE(original_title, ''))` — deduplication key used
 | `id` | SERIAL PK | |
 | `movie_id` | INTEGER NOT NULL | FK → movies(id) ON DELETE CASCADE |
 | `cinema_id` | TEXT NOT NULL | FK → cinemas(id) ON DELETE CASCADE |
-| `datetime` | TEXT NOT NULL | ISO 8601 UTC |
+| `datetime` | TEXT NOT NULL | Italian wall clock, `YYYY-MM-DDThh:mm:ss`, no offset |
 | `hall` | TEXT | |
 | `is_3d` | BOOLEAN NOT NULL | default false |
 | `is_ov` | BOOLEAN NOT NULL | default false |
@@ -431,7 +483,8 @@ Unique index: `(title, COALESCE(original_title, ''))` — deduplication key used
 | `created_at` | TEXT NOT NULL | |
 | `updated_at` | TEXT NOT NULL | |
 
-Unique constraint: `(cinema_id, movie_id, datetime)` — prevents duplicate showings.
+Unique constraint: `(cinema_id, movie_id, datetime)` — prevents duplicate showings. Indexes on
+`cinema_id`, `movie_id`, `datetime`.
 
 ### `tmdb_lookup_cache`
 
@@ -445,7 +498,7 @@ Caches title → TMDB id resolutions to avoid redundant API calls during enrichm
 | `looked_up_at` | TEXT NOT NULL | |
 | `scraped_poster_url` | TEXT | poster of the scraped row the entry was written for |
 
-Unique index on `(scraped_title, scraped_original_title)`.
+Primary key `(scraped_title, scraped_original_title)`.
 
 ### `ai_match_verdicts`
 
@@ -464,18 +517,19 @@ What the scraper's AI verification pass (`npm run enrich:ai`) concluded about a 
 | `model` | TEXT | |
 | `verified_at` | TEXT NOT NULL | ISO 8601 UTC |
 
-Unique index on `(scraped_title, scraped_original_title)`.
+Primary key `(scraped_title, scraped_original_title)`.
 
 ### `felix_cache`
 
-Single-row table (id = 1) that persists the active Gemini context cache reference across server restarts.
+One row per city: the active Gemini context cache of the city's Felix corpus, kept across server
+restarts. Written with `INSERT … ON CONFLICT (city_id) DO UPDATE`.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | INTEGER PK | always 1 |
+| `city_id` | TEXT PK | FK → cities(id) ON DELETE CASCADE |
 | `cache_name` | TEXT NOT NULL | Gemini resource name, e.g. `cachedContents/abc123` |
 | `expires_at` | TEXT NOT NULL | ISO 8601 UTC |
-| `created_at` | TEXT NOT NULL | |
+| `created_at` | TEXT NOT NULL | when the corpus was built (used by the daily rebuild rule) |
 
 ### `lobbies`
 
@@ -484,7 +538,7 @@ A group outing to one screening. The screening's details are copied in once at c
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | default `gen_random_uuid()` |
-| `version` | BIGINT NOT NULL | default `1`; bumped by triggers, polled by clients |
+| `version` | BIGINT NOT NULL | default `1`; incremented by the API on every change, polled by clients, and the optimistic-concurrency token |
 | `screening_id` | INTEGER | no FK; check `EXISTS` in `screenings` for the `available` flag |
 | `movie_id` | INTEGER | |
 | `movie_slug` | TEXT | |
@@ -512,25 +566,27 @@ Index `lobbies_starts_at_idx` on `starts_at`. `expiresAt` is `starts_at + interv
 | `device_hash` | BYTEA | SHA-256 of the device token; null = unclaimed |
 | `joined_at` | TIMESTAMPTZ NOT NULL | default `now()` |
 
-- Unique constraint `lobby_participants_one_per_device` on `(lobby_id, device_hash)`. A 23505 on it maps to `already_joined`.
-- Unique index `lobby_participants_name_uniq` on `(lobby_id, lower(name))`. A 23505 on it maps to `name_taken`.
-- Claiming a name, in one transaction: first null this device's other entry in the lobby, then set it on the claimed row. The reverse order hits the unique constraint.
+- Unique constraint `lobby_participants_one_per_device` on `(lobby_id, device_hash)`, `DEFERRABLE INITIALLY DEFERRED`: checked at commit, so a claim can move a device between two rows in one transaction in any order.
+- Unique index `lobby_participants_name_uniq` on `(lobby_id, lower(name))`.
+- Index `lobby_participants_lobby_id_idx` on `lobby_id`.
+- Both unique rules back up the API's own checks (`already_joined`, `name_taken`) against concurrent requests.
 
-### Lobby triggers & functions
+### Lobby functions
 
-- `lobby_participants_bump_version` (AFTER INSERT/UPDATE/DELETE on `lobby_participants`): `lobbies.version + 1`.
-- `lobbies_bump_version_on_note` (BEFORE UPDATE OF `note`, when it actually changes): `version + 1`.
+- No triggers: the version-bumping triggers were dropped when the API took over versioning (migration `LobbyVersionInDomain`).
 - `delete_expired_lobbies()` returns the number of deleted lobbies (those with `starts_at` more than 48 h ago). The API calls it at startup and hourly (`ExpiredLobbyCleanupService`), since the server has no pg_cron.
 
 ---
 
 ## Felix AI Subsystem
 
-Felix is a Gemini-backed chat assistant that answers questions about films showing in Rome.
+Felix is a Gemini-backed chat assistant that answers questions about films showing in a city
+(Rome today). Each city has its own corpus and context.
 
 ### Corpus
 
-Built on demand from the database. Contains every movie that has at least one future screening, formatted as Markdown with:
+Built on demand from the database for one city. Contains every movie that has at least one screening
+in the city that hasn't started (compared in Italian time), formatted as Markdown with:
 - Title (Italian, original, English)
 - Tagline, genres, year, runtime, language, content rating, country
 - Director, writer, cast
@@ -542,11 +598,12 @@ Built on demand from the database. Contains every movie that has at least one fu
 
 ### Caching strategy
 
-Two layers, tried in order:
+A city's context is one of two kinds:
 
-1. **Gemini context cache** — the corpus is uploaded once via `POST /v1beta/cachedContents` with a 24 h TTL. The resulting `cache_name` is persisted to `felix_cache`. On every request `ensureReady()` checks memory → DB → creates new cache. Falls back to layer 2 if cache creation fails or returns 404.
+1. **Gemini context cache** — the corpus is uploaded once via `POST /v1beta/cachedContents` with a 24 h TTL; the cache name is persisted to `felix_cache`.
+2. **Inline context** — when Gemini won't cache the corpus, it is kept in memory and sent with every Gemini call.
 
-2. **Inline context** — corpus is prepended directly to the conversation contents on every Gemini call. Valid for 24 h in memory, then rebuilt.
+A context is fresh when it was built after the latest daily rebuild time (`Felix__DailyRebuildAt`, 05:00 Italian time by default, after the nightly scrape) and, besides, a cache has more than 1 h left or an inline corpus is under 24 h old. On every request the city's context is checked in memory, then in `felix_cache`, then rebuilt (at most one rebuild at a time per city). A cache that expires during a request (Gemini answers 404) falls back to the corpus inline. Gemini calls retry transient failures (30 s per attempt, 75 s in total).
 
 ### Model
 
@@ -568,7 +625,7 @@ Please only include films and screenings that match ALL of these filters.
 
 ### System prompt (summary)
 
-- Felix is the cinema assistant for felinoir.it, covering films showing in Rome
+- Felix is the cinema assistant for felinoir.it, covering films showing in Rome (the prompt is Rome-specific until there is a second city)
 - Always assumes the user is in Rome
 - Replies in the same language the user writes in (IT or EN)
 - Prefers IMDb → RT → MC for ratings; only uses TMDB if none available
@@ -578,14 +635,15 @@ Please only include films and screenings that match ALL of these filters.
 
 ## Static Cinema Config
 
-`cinemas.yml` at the project root is the source of truth for cinema metadata not stored in the DB (coordinates, `openAir` flag). The corpus builder reads this to tag open-air venues with `[Open Air]` in the screening list.
+`cinemas.yml` lives in the **scrapers** repository only, as the hand-edited list of cinemas. The scrapers' `sync-cinemas` writes it into `cinemas` (name, address, website, `city_id`, coordinates, `open_air`); the backend reads those columns and no longer ships or reads the file. A cinema's `city` must be the id of an existing row in `cities`.
 
 ```yaml
 - id: cinema-farnese
   name: Cinema Farnese
   address: Campo de' Fiori 56, Roma
   website: https://...
-  openAir: false
+  city: rome
+  open-air: false
   coordinates: { lat: 41.894, lng: 12.472 }
 ```
 
@@ -597,7 +655,7 @@ The `id` must match the `cinema.id` in the database.
 
 - **No authentication** — all endpoints are public
 - **CORS** — all origins allowed (`*`)
-- **Timestamps** — stored and returned as `TEXT` in ISO 8601 UTC; the DB never uses `TIMESTAMPTZ` columns
+- **Timestamps** — stored and returned as `TEXT`: ISO 8601 UTC, except screening times (Italian wall clock); only the lobby tables use `TIMESTAMPTZ`
 - **Genres on Movie** — the scraped `genres` field is a comma-separated string; TMDB enrichment adds `tmdb_genre` (Italian) and `tmdb_genre_en` (English) as separate columns
 - **JSON blobs** — TMDB fields like `tmdb_keywords`, `tmdb_collection`, `tmdb_production_companies` etc. are stored as raw JSON strings in TEXT columns; the backend returns them as strings, not parsed objects
 - **Slug uniqueness** — slugs are generated from the Italian title; the unique index is partial (`WHERE slug IS NOT NULL`)

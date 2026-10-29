@@ -1,49 +1,46 @@
-# Felinoir Backend — Architecture Schema
+# Felinoir Backend — Architecture
 
-A .NET 10 reimplementation of the Felinoir cinema backend (films, screenings and
-cinemas in Rome, plus the **Felix** Gemini-backed chat assistant). Clean architecture,
-minimal API, EF Core onto a pre-existing Postgres schema. See `SPEC.md` for the contract
-and `CLAUDE.md` for the implementation rules.
-
-> Diagrams below are plain ASCII so they render in any viewer. (An ER diagram of the
-> database tables can be added on request.)
+A .NET 10 backend for felinoir.it: the films, screenings and cinemas of a city (Rome today),
+shareable group outings to a screening (**Lobbies**), and **Felix**, a Gemini-backed chat
+assistant. The HTTP contract is in `SPEC.md`, the vocabulary in `CONTEXT.md`, the decisions in
+`docs/adr/`. This document is the map.
 
 ---
 
-## 1. Layers & dependency direction
+## 1. Projects and the dependency rule
 
-Four projects; dependencies point **inward** only. `Domain` knows nothing about the
-others; the API host wires everything together at the edge.
+Clean architecture (ADR 0002): dependencies point inward; Domain depends on nothing.
 
 ```text
-              +-----------------------------------------------------+
-              |  Felinoir.Api   (host)                              |
-              |  minimal API . endpoints . DI . OpenAPI / Scalar    |
-              +----------------+-----------------------+------------+
-                               |                       |
-                      depends  |                       | depends
-                       on      v                       v   on
-        +----------------------------+     +------------------------------+
-        |  Felinoir.Application      |<----|  Felinoir.Infrastructure     |
-        |  services . DTOs . Felix   | dep |  EF Core . Gemini . cinemas  |
-        |  orchestration             | on  |  .yml . DATABASE_URL parse   |
-        +-------------+--------------+     +---------------+--------------+
-                      |                                    |
-              depends |                                    | depends
-               on     v                                    v   on
-              +-------------------------------------------------------+
-              |  Felinoir.Domain    entities . no framework deps      |
-              +-------------------------------------------------------+
-
-        Dependencies point inward  ->  Domain depends on nothing.
+   +--------------------------+      +---------------------------+
+   |  Felinoir.Api  (host)    |      |  Felinoir.Migrator        |
+   |  endpoints . pipeline    |      |  one-shot schema migrator |
+   |  errors . observability  |      |  (own image)              |
+   +------------+-------------+      +-------------+-------------+
+                |                                  |
+                v                                  v
+   +--------------------------+      +---------------------------+
+   |  Felinoir.Application    |<-----|  Felinoir.Infrastructure  |
+   |  feature slices          |      |  EF Core . migrations     |
+   |  behaviours . ports      |      |  repositories . Gemini    |
+   +------------+-------------+      +-------------+-------------+
+                |                                  |
+                v                                  v
+   +-------------------------------------------------------------+
+   |  Felinoir.Domain   aggregates . entities . value objects    |
+   |  Result / Error . no framework dependencies                 |
+   +-------------------------------------------------------------+
 ```
 
-| Project | Responsibility | Depends on |
+| Project | Holds | Depends on |
 |---|---|---|
-| **Domain** | Entities (`Movie`, `Cinema`, `Screening`, `FelixCache`, `TmdbLookupCache`). Plain POCOs. | — |
-| **Application** | Service interfaces + implementations, DTOs, business rules, Felix orchestration. Talks to the DB via the `IApplicationDbContext` abstraction. | Domain |
-| **Infrastructure** | EF Core `DbContext` + entity configs + migrations, the Gemini REST client, the `cinemas.yml` reader, `DATABASE_URL` parsing. | Application, Domain |
-| **Api** | ASP.NET Core minimal API host: one endpoint file per resource, DI wiring, CORS `*`, camelCase JSON, OpenAPI document + Scalar UI. Thin endpoints delegate to services. | Application, Infrastructure |
+| **Domain** | The Lobby aggregate, the read-only catalogue entities (`Movie`, `Cinema`, `Screening`, `City`, `FelixCache`), value objects (`ScreeningTime`, `ParticipantName`, …), `Result` / `Error`, `Entity` / `AggregateRoot`. | — |
+| **Application** | Feature slices (`Features/<Area>/`: request + validator + handler), pipeline behaviours, ports (`IReadDbContext`, `IUnitOfWork`, `ILobbyRepository`, `IGeminiClient`, `IFelixContextStore`), response records. | Domain |
+| **Infrastructure** | `ApplicationDbContext`, entity configurations, migrations, `DatabaseMigrator`, repositories, `GeminiClient`, `FelixContextStore`, the lobby cleanup job, `DATABASE_URL` parsing. Scraper-only tables (`ScraperTables/`). | Application, Domain |
+| **Api** | Minimal-API endpoints (one file per resource), mediator registration, problem responses, observability, CORS, OpenAPI + Scalar. | Application, Infrastructure |
+| **Migrator** | Console app: runs `DatabaseMigrator` on `DATABASE_URL` and exits 0/1. | Infrastructure |
+
+The rule is enforced by architecture tests (`tests/Felinoir.UnitTests/Architecture`).
 
 ---
 
@@ -52,159 +49,158 @@ others; the API host wires everything together at the edge.
 ```text
 src/
 |-- Felinoir.Domain/
-|   `-- Entities/            Movie, Cinema, Screening, FelixCache, TmdbLookupCache
+|   |-- Common/          Entity, AggregateRoot, IDomainEvent, Result, Error, IFailureResult
+|   |-- Entities/        Movie, Cinema, Screening, City, FelixCache   (read-only, init-only)
+|   |-- Lobbies/         Lobby (aggregate root), Participant, LobbyId, ParticipantId,
+|   |                    ParticipantName, LobbyNote, DeviceHash, ScreeningSnapshot, LobbyErrors
+|   `-- ValueObjects/    ScreeningTime
 |-- Felinoir.Application/
-|   |-- Common/Interfaces/   IApplicationDbContext, ICinemaConfigProvider
-|   |-- Movies/ Cinemas/ Screenings/   I*Service + *Service (service pattern)
-|   |-- Felix/               ICorpusBuilder/CorpusBuilder, IFelixService/FelixService,
-|   |                        IGeminiClient, FelixState, FelixFilters(+Formatter), ChatMessage
-|   `-- DependencyInjection.cs
+|   |-- Common/          Behaviors/, Interfaces/, Exceptions/, PageRequest, UtcText, FelinoirTelemetry
+|   |-- Cities/          CityLookup  (?city= by id or name)
+|   `-- Features/
+|       |-- Health/      GetHealth
+|       |-- Movies/      GetMovies, GetMovie(ById|BySlug), MovieResponse
+|       |-- Cinemas/     GetCinemas, GetCinemaById, CinemaResponse
+|       |-- Screenings/  GetScreenings, ScreeningResponse
+|       |-- Lobbies/     CreateLobby, GetLobby, LobbyCommands (note/join/rename/remove/claim),
+|       |                LobbyViews, ILobbyRepository
+|       `-- Felix/       AskFelix, FelixReadiness + FelixContext, FelixContextRegistry,
+|                        CorpusSnapshotLoader + CorpusRenderer, IGeminiClient, IFelixContextStore
 |-- Felinoir.Infrastructure/
-|   |-- Persistence/         ApplicationDbContext, Configurations/, Migrations/ (baseline)
-|   |-- Felix/               GeminiClient, CinemasYamlConfigProvider, CinemasConfigLocator
-|   |-- Configuration/       DatabaseUrl  (URI -> Npgsql keyword string)
-|   `-- DependencyInjection.cs
-`-- Felinoir.Api/
-    |-- Endpoints/           Health, Movie, Cinema, Screening, Felix (+ request/response DTOs)
-    `-- Program.cs           host, CORS, JSON, OpenAPI + Scalar, endpoint mapping
+|   |-- Persistence/     ApplicationDbContext, Configurations/, Migrations/, DatabaseMigrator,
+|   |                    LobbyRepository, ExpiredLobbyCleanupService, ScraperTables/
+|   |-- Felix/           GeminiClient, FelixContextStore
+|   `-- Configuration/   DatabaseUrl
+|-- Felinoir.Api/        Endpoints/, Errors/, Observability/, Program.cs
+`-- Felinoir.Migrator/   Program.cs
 
 tests/
-|-- Felinoir.UnitTests/          service logic in isolation (EF InMemory + Moq)
-`-- Felinoir.IntegrationTests/   real Postgres via Testcontainers + WebApplicationFactory
-
-Root:  Dockerfile . .dockerignore . docker-compose.yml (DB only) . cinemas.yml
-       .github/workflows/ci.yml . Felinoir.slnx . SPEC.md . CLAUDE.md
+|-- Felinoir.UnitTests/         domain, behaviours, readiness, renderer, Felix handler, architecture
+|-- Felinoir.IntegrationTests/  real Postgres (Testcontainers): contract snapshots, schema drift,
+|                               query handlers, lobby persistence, Felix store, errors, tracing
+`-- schema/production.sql       the schema the scrapers had built (Baseline's reference)
 ```
 
 ---
 
-## 3. Request flow (read endpoints)
+## 3. A request
 
-Endpoints never touch EF Core directly — they delegate to a service, which queries the
-`DbContext` through `IApplicationDbContext` (the EF unit of work itself, deliberately not
-wrapped in a repository).
+Endpoints only turn HTTP into a request and send it. Every handler runs inside the mediator
+pipeline (source-generated `martinothamar/Mediator`, scoped):
 
 ```text
-  Client            Endpoint          Service           DbContext          Postgres
- (frontend)          (Api)         (Application)     (Infrastructure)
-     |                  |                |                  |                  |
-     |  GET /movies     |                |                  |                  |
-     |----------------->| GetAllAsync()  |                  |                  |
-     |                  |--------------->| LINQ (AsNoTrack) |                  |
-     |                  |                |----------------->|  SELECT ...      |
-     |                  |                |                  |----------------->|
-     |                  |                |                  |     rows         |
-     |                  |                |   List<Movie>    |<-----------------|
-     |                  | IReadOnlyList  |<-----------------|                  |
-     |  200 JSON        |<---------------|                  |                  |
-     |<-----------------|                |                  |                  |
+  HTTP -> endpoint -> ISender.Send(request)
+                         |
+                         v
+          LoggingBehavior         span "<Request>" + one log line (name, duration, outcome)
+          ValidationBehavior      FluentValidation; a failure returns Error.Validation(code)
+          ConflictRetryBehavior   commands: a lost race runs the command once more, else 409
+          UnitOfWorkBehavior      commands: one SaveChanges, never after a failed Result
+                         |
+                         v
+                      handler  ->  Result<T>  ->  endpoint: 200 / 201 / 304, or a problem response
+```
 
-  Routes (documented at /scalar, spec at /openapi/v1.json):
-    GET /health   GET /movies   GET /movies/slug/{slug}   GET /movies/{id}
-    GET /cinemas  GET /cinemas/{id}   GET /screenings   POST /felix/chat
+Behaviours apply by constraint: queries get Logging (and Validation when they return a `Result`);
+commands get all four.
+
+**Queries** (the catalogue, `GetLobby`) read through `IReadDbContext` (untracked) and project into
+response records in `Select`: each record has one `Projection` expression, also compiled for entities
+loaded with `Include`. **Commands** load an aggregate through its repository, change it through its
+methods and let the unit of work commit. Query handlers never touch repositories or the unit of
+work (architecture test).
+
+Routes (documented at `/scalar`, spec at `/openapi/v1.json`):
+
+```text
+GET  /health
+GET  /movies   GET /movies/slug/{slug}   GET /movies/{id}       (?city=, limit, offset)
+GET  /cinemas  GET /cinemas/{id}                                 (?city=)
+GET  /screenings                                                 (?cinemaId, movieId, city, from, to, withRelations, limit, offset)
+POST /lobbies  GET|PATCH /lobbies/{id}  POST /lobbies/{id}/participants
+PATCH|DELETE /lobbies/{id}/participants/{pid}  POST /lobbies/{id}/participants/{pid}/claim
+POST /felix/chat                                                 (?city=)
 ```
 
 ---
 
-## 4. Felix subsystem (POST /felix/chat)
+## 4. Domain
 
-The most involved flow. `FelixService` orchestrates a two-layer context strategy; the
-`GeminiClient` owns HTTP/payload details; readiness state is process-wide (`FelixState`).
-
-```text
-  POST /felix/chat
-        |
-        v
-  messages valid? ------- no ------> 400  "Richiesta non valida."
-        | yes
-        v
-  GEMINI_API_KEY set? ---- no ------> 503  "Felix non e configurato al momento."
-        | yes
-        v
-  FelixService.GenerateAsync
-        |
-        v
-  EnsureReady():
-     |-- in-memory cache fresh?  --- yes --.
-     |-- in-memory inline fresh? --- yes --|
-     |-- felix_cache DB row valid? ------- |---> READY
-     `-- else COLD START:                  |
-            build corpus (DB + cinemas.yml)|
-            Gemini cachedContents create   |
-               |-- ok            -> persist cache_name to felix_cache
-               `-- too small/fail-> keep corpus inline (24h)
-        |
-        v
-  append active filter context to the last user message
-        |
-        v
-  cache available? -- yes --> generateContent(cachedContent)
-        |                          |-- 404 expired --.
-        | no                       `-- ok -> 200 { reply }
-        v                                            |
-  generateContent(inline corpus) <-------------------'
-        |
-        v
-  200 { reply }          (any exception along the way -> 500 generic error)
-```
-
-- **Corpus** = Markdown of every film with a future screening (TMDB-preferred titles,
-  IMDb -> RT -> MC ratings, keywords, plot, screenings grouped per cinema with
-  `[VO]` / `[3D]` / `[Open Air]` tags).
-- **Gemini**: `gemini-2.5-flash-lite` REST, `maxOutputTokens: 700`, `temperature: 0.4`.
-  Context caching needs >= 2048 tokens; below that it falls back to inline context.
-- **`felix_cache`** (single-row table) persists the active `cache_name` across restarts.
+- **Lobby** is the one write model: an aggregate root owning its `Participant`s and every rule
+  (screening not started, unique names ignoring case, one entry per device, claiming releases the
+  device's other entry, 48 h expiry). Each change increments `Version`, which is also EF's
+  concurrency token.
+- **Catalogue entities** are read models written by the scrapers: init-only, no behaviour invented
+  for its own sake, no repositories. Scraper-only columns are EF shadow properties; scraper-only
+  tables live in Infrastructure.
+- **`ScreeningTime`**: screening times are Italian wall clock (`Europe/Rome`, the only zone).
+- **Errors** are values: `Error(Code, Kind)`; `Kind` maps to one HTTP status in `ErrorResults`.
 
 ---
 
-## 5. External dependencies & data
+## 5. Persistence and the schema
 
-```text
-   Frontend                +--------------------------+   HTTPS    Google Gemini
-   felinoir.it  --/api/--->  |                          | --------> generativelanguage
-   (Next.js BFF)  felix      |    Felinoir.Api  :3001   |           /v1beta
-                             |                          | --reads-> cinemas.yml
-                             +------------+-------------+           (coords / openAir)
-                                          | EF Core / Npgsql
-                                          v
-                             Postgres (pre-existing schema)  <--writes--  Node scraper
-                                                                          (separate service)
-```
-
-- The Postgres schema **already exists with production data**; EF maps onto it (snake_case,
-  TEXT timestamps as `string`) and never creates/drops it. Migrations use a baseline
-  (`InitialCreate` marked already-applied; its DDL is never run against prod).
-- TMDB / OMDb enrichment and scraping are handled by the separate Node scraper, not this server.
+- **This repository owns the schema** (ADR 0001). EF migrations are the only DDL: `Baseline`
+  (the schema the scrapers had built, verified against `tests/schema/production.sql`),
+  `NormaliseKeys`, `Cities`, `LobbyVersionInDomain`.
+- **The migrator** runs before the API and the scrapers (compose `service_completed_successfully`).
+  A database the scrapers built, with no migration history, is adopted by recording `Baseline` as
+  applied. The API never migrates.
+- **Drift tests** compare schemas through catalog facts: Baseline equals production, adopting
+  production equals a fresh database, the model has no unmigrated changes, every `Down()` works.
+- Objects EF can't model live only in migrations: `idx_movies_unique`, `lobby_participants_name_uniq`
+  (expression indexes), the deferrable `lobby_participants_one_per_device`, `delete_expired_lobbies()`.
+- `ApplicationDbContext` translates EF's concurrency exception and unique violations (also a deferred
+  one at commit) into Application exceptions, which `ConflictRetryBehavior` handles.
 
 ---
 
-## 6. Testing & delivery
+## 6. Felix
 
 ```text
-  UnitTests  (EF InMemory + Moq) ----.
-                                      |
-  IntegrationTests                    +--> CI (GitHub Actions, push to main)
-  (Testcontainers Postgres   --------'         |
-   + WebApplicationFactory)                    v
-                                      build + dotnet test
-                                               |
-                                          all pass?
-                                               | yes
-                                               v
-                                      docker build & push
-                                               |
-                                               v
-                                   Docker Hub: alesrossi/cinema-backend
-                                       tags:  latest , sha-<commit>
+  POST /felix/chat?city=
+      |  validated: messages present, each "user"|"assistant" with content
+      v
+  AskFelixHandler
+      |  Gemini not configured -> 503
+      |  FelixContextRegistry[city]: fresh context in memory? ---------------------+
+      |  else, under the city's lock: re-check memory -> felix_cache (store) ------+
+      |  else rebuild: CorpusSnapshotLoader -> CorpusRenderer -> Gemini cache,     |
+      |       or inline if Gemini won't cache; persist a cache (upsert)            |
+      v                                                                            v
+  Gemini generateContent (cached, or inline; an expired cache falls back inline) -> { reply }
 ```
 
-- **Unit tests** — service logic in isolation (corpus builder, Felix orchestration, filter
-  formatting, YAML parsing, `DATABASE_URL` parsing).
-- **Integration tests** — real Postgres via Testcontainers (host-network workaround for the
-  Calico dev box; standard bridge on CI), plus in-memory `WebApplicationFactory` for the
-  HTTP contract.
-- **CI/CD** — the `test` job gates the `publish` job; on success the image is pushed as
-  `:latest` and `:sha-<commit>`. Secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
-- **Image** — multi-stage Dockerfile (`sdk:10.0` build -> `aspnet:10.0` runtime), `cinemas.yml`
-  copied in; `DATABASE_URL` / `GEMINI_API_KEY` supplied at runtime.
+Freshness (`FelixReadiness`, pure): built after the latest daily rebuild time (05:00 Italian time by
+default) and a cache with more than 1 h left, or an inline corpus under 24 h old. `GeminiClient` is a
+typed `HttpClient` with the standard resilience handler (30 s per attempt, 2 retries, 75 s total).
+Model, URL and generation settings are constants in `GeminiClient`; the system prompt is Rome's.
+
+---
+
+## 7. Cross-cutting
+
+- **Errors**: RFC 7807 problem details with `error` (the code clients read) and `traceId`; empty
+  framework errors get a body; unhandled exceptions are logged and answered with a 500.
+- **Observability**: the W3C trace id is the correlation id (incoming `traceparent` continued,
+  `X-Trace-Id` on every response). Serilog from configuration: Elastic Common Schema JSON in
+  production, readable lines in Development. OpenTelemetry traces ASP.NET Core, HttpClient, Npgsql
+  and the `Felinoir` source; exported over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
+- **DI**: scopes validated at startup; singletons hold no scoped services (the Felix registry, the
+  `TimeProvider`); typed clients are transient.
+- **Build**: warnings as errors, .NET analysers, central package versions.
+
+---
+
+## 8. Deployment
+
+```text
+  db (Postgres 16)
+    -> cinema-migrator   alesrossi/cinema-backend-migrator   (one-shot; exits 0)
+         -> cinema-backend   alesrossi/cinema-backend         (API)
+         -> cinema-scraper   alesrossi/cinema-scrapers        (cron: docker compose run --rm)
 ```
+
+One Dockerfile builds both backend images (`docker build .` for the API, `--target migrator` for the
+migrator); CI publishes them with the same tags from `main`. What the scrapers, the frontend and the
+server need for the cutover is in `alignment.md` and `docs/SCRAPERS-SCHEMA-MIGRATION.md`.

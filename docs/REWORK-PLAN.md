@@ -332,7 +332,15 @@ only a safety net: any 24 h window contains a daily rebuild time.
   resilience handler (timeout, retry with jitter). Settings are bound through
   `IOptions<GeminiOptions>` and validated at startup. Swallowed exceptions are now logged.
 
-## Step 7 — Wrap-up
+## Step 7 — Wrap-up — done 2026-10-29
+
+`IApplicationDbContext` removed (`FelixCache` became read-only too); `SPEC.md`,
+`docs/ARCHITECTURE.md` and `CLAUDE.md` rewritten for the new design (`CLAUDE.md` is gitignored, so
+its rewrite is local); `docs/REWORK-EXPLORATIONS.md` marked historical; the cutover in
+`docs/SCRAPERS-SCHEMA-MIGRATION.md` is now a server runbook with the expected migrator output and a
+rollback that pins the previous image digests. The k6 comparison was dropped with the performance
+work.
+
 
 - Remove `IApplicationDbContext` and anything else the slices replaced.
 - Rewrite `CLAUDE.md` (new architecture rules, schema ownership, migrator, testing layers),
