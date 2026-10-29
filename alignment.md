@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-29, after rework step 5.
+**Last updated:** 2026-10-29, after rework step 6.
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -33,6 +33,10 @@ Legend: **Required** = the release breaks without it · **Check** = verify while
 | 5 | Lobby `version`: a new lobby starts at **1** (was 2) and every change adds **1** (a claim added 2); still strictly increasing | frontend |
 | 5 | New 409 `conflict` when a lobby change loses a race twice in a row (extremely rare) | frontend |
 | 5 | Version triggers and their functions dropped; `lobby_participants_one_per_device` is a deferrable constraint | scrapers |
+| 6 | `/felix/chat` errors are problem responses keeping the Italian `error` texts the UI shows (`Richiesta non valida.`, `Felix non è configurato al momento.`, `Qualcosa è andato storto…`), plus a `detail` on 400s | frontend |
+| 6 | `/felix/chat?city=` (optional, id or name; Rome by default; unknown city → 400) | frontend |
+| 6 | Felix rebuilds its corpus on the first question after 05:00 Italian time (`Felix__DailyRebuildAt`), so answers follow the night's scrape | server |
+| 6 | Gemini calls retry transient failures: a Felix answer can now take up to ~75 s in the worst case (30 s per attempt) | frontend, server |
 | 3 | Logs: Elastic Common Schema JSON on stdout (Production), configurable through `Serilog__…` variables; tracing exported over OTLP when configured | server |
 
 ---
@@ -102,6 +106,9 @@ works with problem responses.
 - [ ] `?from=` uses `romeWallClockKey` (`YYYY-MM-DDTHH:MM`, Rome time, no offset): unchanged
       behaviour. Only a Troisi screening starting in exactly the current minute is now excluded
       (its stored time has no seconds).
+- [ ] Felix's proxy route (`src/app/api/felix/route.ts`) has no timeout of its own; with Gemini retries
+      an answer can take longer than before. Check the chat's loading state copes (optional: a
+      client-side timeout).
 - [ ] Movie, cinema, home, lobby and Felix pages against the new image (section 5).
 
 ### Optional
@@ -143,6 +150,7 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 | `ASPNETCORE_ENVIRONMENT` | backend | leave unset (= Production: ECS JSON logs, no developer pages) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | backend | **new, optional**: e.g. Elastic APM's OTLP endpoint; traces and metrics are exported only when set (`OTEL_EXPORTER_OTLP_HEADERS` for auth) |
 | `Serilog__MinimumLevel__Default` and `Serilog__MinimumLevel__Override__<Namespace>` | backend | **new, optional**: log levels, e.g. `Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=Information` |
+| `Felix__DailyRebuildAt` | backend | **new, optional**: Italian time (`HH:mm`, default `05:00`) after which Felix rebuilds its corpus; keep it after the nightly scrape's end |
 | `CINEMAS_CONFIG_PATH` | backend | **removed**: the backend no longer reads `cinemas.yml` |
 
 ### Other

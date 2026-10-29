@@ -292,7 +292,19 @@ As built, and where it differs from the plan below:
   - each with an `ILobbyRepository` and a FluentValidation validator
 - `LobbyService`, `LobbyResult`, `LobbyError` and `LobbyInput` are deleted.
 
-## Step 6 — Felix
+## Step 6 — Felix — done 2026-10-29
+
+As built (`Application/Features/Felix`): `AskFelixCommand` + validator + handler; `CorpusSnapshotLoader`
+and the pure `CorpusRenderer`; `FelixReadiness` (pure) with `FelixContext` and the per-city
+`FelixContextRegistry`; `IFelixContextStore` (upserts `felix_cache`, which now records the build time
+in `created_at`); a typed, resilient `GeminiClient`. `?city=` is accepted on `/felix/chat`. EF
+InMemory is gone. The corpus text and every recorded Gemini call are unchanged.
+
+Kept as they were, as agreed: the Gemini settings (base URL, model, TTL, temperature, tokens) are
+constants in `GeminiClient`, and the system prompt there still says Rome; a second city needs a
+per-city prompt. New setting: `Felix:DailyRebuildAt` (default 05:00). The 24 h inline limit is now
+only a safety net: any 24 h window contains a daily rebuild time.
+
 
 - **Slice `AskFelix`:** `AskFelixCommand(CityId, Messages, Filters)`. A chat turn's speaker
   becomes a validated value object in place of the `"user"`/`"assistant"` string checks.
