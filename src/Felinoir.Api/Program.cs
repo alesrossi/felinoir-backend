@@ -7,8 +7,9 @@ using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
 // Load .env for local dev / IDE runs. No-op when the file is absent (CI/prod),
-// where the real environment already exports DATABASE_URL etc.
-DotNetEnv.Env.TraversePath().Load();
+// where the real environment already exports DATABASE_URL etc. NoClobber: variables that are
+// already set win over .env.
+DotNetEnv.Env.NoClobber().TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 

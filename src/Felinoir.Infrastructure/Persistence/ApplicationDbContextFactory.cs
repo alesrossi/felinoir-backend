@@ -13,7 +13,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
-        DotNetEnv.Env.TraversePath().Load();
+        DotNetEnv.Env.NoClobber().TraversePath().Load();
 
         var connectionString = DatabaseUrl.ToNpgsqlConnectionString(
             Environment.GetEnvironmentVariable("DATABASE_URL"));
