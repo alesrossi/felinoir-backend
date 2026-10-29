@@ -37,6 +37,12 @@ to run against a database whose schema they weren't written for.
 - Remove the runtime "is the trigram index usable" detection in the movies repository. With
   ADR 0001, `pg_trgm` and `idx_movies_canonical_trgm` are guaranteed by the migrations.
 - Update `src/lib/db/CLAUDE.md` to say the schema is owned by `felinoir-backend`.
+- Names changed by the backend's `NormaliseKeys` migration: `idx_tmdb_lookup_cache_key` and
+  `idx_ai_match_verdicts_key` are now the primary keys `tmdb_lookup_cache_pkey` and
+  `ai_match_verdicts_pkey`, and `lobby_participants_one_per_device` is a unique index rather than
+  a constraint. The scrapers' `ON CONFLICT (scraped_title, scraped_original_title)` targets still
+  match. Until `schema.ts` is gone, its bootstrap re-adds the two old unique indexes next to the
+  primary keys, which is another reason to remove it.
 
 ### 2. Add a schema version guard
 
@@ -48,7 +54,8 @@ At pool creation, before anything else:
 export const REQUIRED_MIGRATION = "20261xxxxxxxxx_<Name>";
 
 const { rows } = await pool.query(
-  `SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = $1`,
+  // snake_case columns: the backend's naming convention applies to EF's history table too.
+  `SELECT 1 FROM "__EFMigrationsHistory" WHERE migration_id = $1`,
   [REQUIRED_MIGRATION],
 );
 if (rows.length === 0) {
@@ -102,21 +109,20 @@ because the version guard already stops a scraper from running on the wrong sche
 
 Production has **no `__EFMigrationsHistory` table** (checked 2026-10-29). Its whole schema was
 created by the scrapers' bootstrap, and EF has never recorded a migration there. The schema does
-already contain everything the five existing migrations (`InitialCreate` …
-`MovieCreditsAndAwards`) create; the backend's drift test proves this against
-`tests/schema/production.sql`.
+already contain everything the backend's `Baseline` migration creates; the backend's drift test
+proves this against `tests/schema/production.sql`. The migrator adopts it on its first run.
 
 1. **Freeze:** pause the daily scraper cron (`server/daily-report.sh`).
 2. **Back up:** take a `pg_dump` (data and schema) of production and keep it off the server.
-3. **Rehearse:** restore the dump into a local Postgres, apply `baseline.sql` (which creates
-   `__EFMigrationsHistory` and marks the five existing migrations as applied, and does nothing on
-   a database that already has them), run the new migrator against it, then
+3. **Rehearse:** restore the dump into a local Postgres, run the new migrator against it (it
+   adopts the database by recording `Baseline` as applied, then applies the later migrations),
+   then
    run the new API and one scraper pass against the result. Check the characterisation
    snapshots and the drift test. Fix and repeat until it's clean.
 4. **Release images:** the backend API and the migrator are tagged with the same version. The
    scraper release has `REQUIRED_MIGRATION` set to the backend's latest migration.
-5. **Deploy, in order:** `baseline.sql` (once, against production), the migrator (one-shot),
-   then the API, then the scraper image (with the
+5. **Deploy, in order:** the migrator (one-shot; adopts production on its first run), then the
+   API, then the scraper image (with the
    updated `cinemas.yml`). In `server/docker-compose.yml`, `api` and `cinema-scraper` depend on
    `migrator` with `condition: service_completed_successfully`.
 6. **Verify:**

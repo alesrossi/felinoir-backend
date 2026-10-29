@@ -49,43 +49,55 @@ Goal: prove later steps change structure, not behaviour.
 
 Done when: the snapshot suite passes against the current code and runs in CI.
 
-## Step 1 — Schema ownership (ADR 0001)
+## Step 1 — Schema ownership (ADR 0001) — done 2026-10-29
 
-- **Baseline the existing migrations.** Neither production nor the local database has an
-  `__EFMigrationsHistory` table (checked 2026-10-29). Every table there was created by the
-  scrapers' `schema.ts`, and the five existing migrations (`InitialCreate` …
-  `MovieCreditsAndAwards`) have only ever run inside test containers. Before the first
-  migrator run, a one-time, idempotent `baseline.sql` (shipped with the migrator) creates the
-  history table and inserts those five ids with product version
-  `10.0.9`, marking them as already applied. That is only correct if the database already
-  contains everything they create, and the drift test proves it: a database built from exactly
-  those five migrations must match `production.sql`, apart from the scraper-only objects listed
-  below. Apply the baseline to the local database first, then rehearse it at the cutover.
-- **`AdoptScraperSchema` migration.** Bring into the EF model everything that exists only in
-  the scrapers' `schema.ts`. Known so far:
-  - `movies.canonical_title`, `tmdb_match_attempts`, `tmdb_last_attempt_at`, `has_matches`
-    (with its CHECK)
-  - `pg_trgm` extension and `idx_movies_canonical_trgm` (GIN), via `HasPostgresExtension` /
-    `HasMethod("gin")`
-  - `idx_movies_title`, `idx_movies_external_id` (check against the snapshot)
-  - anything else found by diffing `production.sql` against a database built from EF migrations
+What the drift test found changed the approach. Neither production nor the local database had
+an `__EFMigrationsHistory` table: every table was created by the scrapers' `schema.ts`, and the
+five old migrations had only ever run in test containers. They also never reproduced
+production: different constraint and index names, `identity` instead of `serial`, no column
+defaults, a unique index instead of the screenings unique constraint, and no `idx_movies_unique`,
+`idx_movies_title`, `idx_movies_external_id`, `idx_screenings_*`, `pg_trgm` or scraper-only
+columns. Marking them as applied would have left the EF model disagreeing with production on
+every name. So the history was squashed instead:
 
-  Written idempotently (`IF NOT EXISTS`), so it is a no-op on production and creates the
-  objects on a fresh database. It is the **last** idempotent migration. The one-off backfill
-  `UPDATE`s from `schema.ts` are not carried over.
-- **Where the scraper-only data lives:** `tmdb_lookup_cache` and `ai_match_verdicts` become
-  persistence-only types in Infrastructure. The scraper-only movie columns are **shadow
-  properties** on `Movie`. Domain never sees them.
-- **Migrator:** an EF migration bundle (`dotnet ef migrations bundle`) built into its own image.
-  In `server/docker-compose.yml` it runs once, and `api` and `cinema-scraper` wait for it with
-  `depends_on: condition: service_completed_successfully`. The API still never migrates at
-  startup.
-- **Drift test in CI:** apply all migrations to an empty database, assert
-  `has-pending-model-changes` is false, and diff the resulting schema against
-  `production.sql` (updated on purpose whenever a migration changes it).
-
-Done when: a database built purely from EF migrations matches production, and the drift test
-is green.
+- **The EF model describes production exactly:** constraint and index names, `serial` ids,
+  column defaults (`SqlDefaults.UtcNowText` for the TEXT timestamps), the screenings unique
+  constraint as an alternate key, every index, `pg_trgm` and the trigram GIN index. The
+  scraper-only movie columns (`canonical_title`, `tmdb_match_attempts`, `tmdb_last_attempt_at`,
+  `has_matches` with its CHECK) are **shadow properties** on `Movie`. `tmdb_lookup_cache` and
+  `ai_match_verdicts` are persistence-only types in `Infrastructure/Persistence/ScraperTables`.
+- **`Baseline` migration:** production's schema exactly. Generated from the model; expression
+  indexes (`idx_movies_unique`, `lobby_participants_name_uniq`), functions and triggers are
+  verbatim raw SQL. Three objects stay in production's shape here (see the next point).
+- **`NormaliseKeys` migration**, the first ordinary one: the unique indexes of
+  `tmdb_lookup_cache` and `ai_match_verdicts` become their primary keys, and the
+  `lobby_participants_one_per_device` constraint becomes a unique index of the same name, so the
+  database matches the model. The scrapers' `ON CONFLICT` targets are column lists and still match.
+- **`DatabaseMigrator`** (Infrastructure) adopts a scraper-built database (scraper tables, no
+  history) by recording `Baseline` as applied without running it, then applies pending
+  migrations. It refuses a scraper schema older than Baseline (no `lobbies` table). EF's history
+  table uses snake_case columns (`migration_id`, `product_version`) because of the naming
+  convention.
+- **Migrator:** `src/Felinoir.Migrator`, a console app running `DatabaseMigrator` on
+  `DATABASE_URL`, built as the `migrator` stage of the Dockerfile (`docker build --target
+  migrator`) and published by CI as `alesrossi/cinema-backend-migrator` with the API's tags. In
+  both compose files it runs once after `db` is healthy, and the API and the scraper wait for it
+  with `service_completed_successfully`. The API never migrates at startup.
+- **Drift tests** (`tests/Felinoir.IntegrationTests/Persistence/SchemaDriftTests.cs`), comparing
+  schemas through catalog facts, not dump text:
+  - `Baseline` alone equals `tests/schema/production.sql`;
+  - adopting a copy of production ends on the same schema and history as a fresh database;
+  - the model has no changes without a migration;
+  - running the migrator twice changes nothing;
+  - an older scraper schema is refused;
+  - every `Down()` reverts cleanly.
+- **The local database is migrated** (history: `Baseline`, `NormaliseKeys`). Its schema is
+  identical to a production copy run through the migrator. Until step 1s, the dev scraper's
+  bootstrap will add back the two old unique indexes beside the new primary keys: harmless
+  drift, gone once the scrapers stop issuing DDL.
+- `.env` loading uses `NoClobber`, so a `DATABASE_URL` already in the environment wins over
+  `.env` (it used to be overridden, which sent a migrator run meant for a scratch database to the
+  local one).
 
 ## Step 2 — Cities and cinema facts
 
@@ -275,7 +287,7 @@ fields and the corrected time comparisons).
 | # | Decision |
 |---|---|
 | Q1 | EF migrations are the only source of DDL. A one-shot migrator runs before the API and the scrapers. The scrapers stop issuing DDL and check the migration version at startup. → ADR 0001 |
-| Q2 | `AdoptScraperSchema` absorbs the scraper-only objects. Misalignment is a bug. |
+| Q2 | The EF model and migrations must describe production exactly; misalignment is a bug. (Implemented by squashing the old migrations into `Baseline`, see step 1.) |
 | Q3–Q4 | A City is the Italian city a Cinema is listed under. Every current Cinema is a Rome Cinema, the Velletri one included. The `?city=` filter is optional groundwork. |
 | Q5 | The `cities` table, `cinemas.city_id`, the free-text `city` dropped, JSON `city` from `cities.name`, `felix_cache` by City, and `?city=` accepting the id or the name. |
 | Q6 | Cinema coordinates and `open_air` move to the database. `cinemas.yml` is scraper-only. |

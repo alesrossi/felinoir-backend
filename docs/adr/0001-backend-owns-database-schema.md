@@ -18,17 +18,17 @@ EF Core migrations in this repository are the single source of truth for all DDL
 
 - Every table, column, index, constraint, extension, trigger and function is in the EF model or a
   migration, including columns only the scrapers use. Drift from production is treated as a bug.
-- One final idempotent migration (`AdoptScraperSchema`) absorbs what currently exists only in the
-  scrapers' bootstrap. After it, migrations are ordinary, non-idempotent EF migrations.
-- Migrations are applied by a dedicated one-shot migrator (EF migration bundle) that runs before
-  both the API and the scrapers. The API still never migrates at startup.
+- The old migrations are squashed into one `Baseline` migration that reproduces production's
+  schema exactly, scraper-only objects included. After it, migrations are ordinary,
+  non-idempotent EF migrations.
+- Migrations are applied by a dedicated one-shot migrator (`src/Felinoir.Migrator`, its own image)
+  that runs before both the API and the scrapers. The API still never migrates at startup.
 - The scrapers stop issuing DDL. They check at startup that `__EFMigrationsHistory` contains the
   migration they were written against, and refuse to run otherwise.
-
 - The existing databases (production and local) have no `__EFMigrationsHistory`: the scrapers
-  created their schema, and EF migrations only ever ran in test containers. A one-time baseline
-  script marks the five migrations up to `MovieCreditsAndAwards` as applied, once a drift test has
-  shown the database already matches them.
+  created their schema, and EF migrations only ever ran in test containers. The migrator adopts
+  such a database by recording `Baseline` as applied without running it; a drift test proves
+  Baseline creates exactly that schema.
 
 ## Consequences
 
