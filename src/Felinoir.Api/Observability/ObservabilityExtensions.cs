@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
-using Elastic.CommonSchema.Serilog;
 using Felinoir.Application.Common;
 using Npgsql;
 using OpenTelemetry;
@@ -22,13 +20,10 @@ public static class ObservabilityExtensions
 
     private const string ServiceName = "felinoir-api";
 
-    private const string DevelopmentTemplate =
-        "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}  {TraceId}{NewLine}{Exception}";
-
     /// <summary>
     /// Serilog, configured from the <c>Serilog</c> configuration section (levels, overrides,
-    /// enrichers, sinks). Without a <c>Serilog:WriteTo</c> it writes to the console: Elastic
-    /// Common Schema JSON, ready to ship to Elasticsearch, or readable lines in Development.
+    /// enrichers, sinks). Without a <c>Serilog:WriteTo</c> it writes to <see cref="LogOutputs"/>:
+    /// readable console lines, and Elastic Common Schema JSON files when a path is configured.
     ///
     /// OpenTelemetry traces ASP.NET Core, outgoing HTTP (Gemini), Npgsql and
     /// <see cref="FelinoirTelemetry"/>, plus their metrics. Nothing is exported until
@@ -37,7 +32,6 @@ public static class ObservabilityExtensions
     public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder)
     {
         var configuration = builder.Configuration;
-        var isDevelopment = builder.Environment.IsDevelopment();
 
         builder.Services.AddSerilog((services, logger) =>
         {
@@ -46,10 +40,7 @@ public static class ObservabilityExtensions
                 .Enrich.FromLogContext();
 
             if (!configuration.GetSection("Serilog:WriteTo").Exists())
-            {
-                if (isDevelopment) logger.WriteTo.Console(outputTemplate: DevelopmentTemplate, formatProvider: CultureInfo.InvariantCulture);
-                else logger.WriteTo.Console(new EcsTextFormatter());
-            }
+                logger.WriteToConfiguredOutputs(configuration);
         });
 
         var otel = builder.Services.AddOpenTelemetry()
