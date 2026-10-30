@@ -1,5 +1,6 @@
 # Grafana provisioning: Loki as the only data source. A trace id in a log line links to every
-# other line of the same request (the API's X-Trace-Id header carries the same id).
+# line of the same trace, across services: a page request in the frontend and the API calls it
+# made, or every step of one scraper run (the API's X-Trace-Id header carries the same id).
 apiVersion: 1
 
 datasources:
@@ -16,6 +17,6 @@ datasources:
         - name: Request
           matcherType: label
           matcherRegex: trace_id
-          url: '{service_name="felinoir-api"} | trace_id="$${__value.raw}"'
+          url: '{service_name=~"felinoir-.+"} | trace_id="$${__value.raw}"'
           datasourceUid: loki
-          urlDisplayLabel: All lines of this request
+          urlDisplayLabel: All lines of this trace

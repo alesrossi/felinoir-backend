@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-30, after adding the server's log stack (Loki, Alloy, Grafana).
+**Last updated:** 2026-10-30, after the scrapers and the frontend joined the server's log stack.
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -137,7 +137,7 @@ works with problem responses.
 | `cinema-scraper` | `alesrossi/cinema-scrapers:latest` | same `depends_on` change; `flaresolverr` unchanged |
 | `cinema-backend` (logs) | — | **new**: `LOG_FILE_PATH` and the `./logs/backend:/app/logs` bind mount (ECS JSON files) |
 | `loki` | `grafana/loki:3.7.9` | **new**: stores the logs (`loki_data` volume); 31-day retention; 512 MB limit |
-| `alloy` | `grafana/alloy:v1.21.3` | **new**: ships `logs/backend/*.json` and `logs/scraper.log` to Loki; 256 MB limit |
+| `alloy` | `grafana/alloy:v1.21.3` | **new**: ships `logs/backend/*.json` (API), `logs/scraper/*.json` (scraper) and `logs/frontend/*.json` (Next.js server) to Loki, all ECS JSON with the same keys; 256 MB limit |
 | `grafana` | `grafana/grafana:13.2.5` | **new**: the log UI at `https://logs.felinoir.it` (nginx-proxy + Let's Encrypt), login required; 384 MB limit |
 | `log-retention` | `curlimages/curl:8.17.0` | **new**: keeps Loki under `LOG_RETENTION_MAX_MB` (5 GB) by deleting the oldest day; 32 MB limit |
 | others | — | unchanged |
@@ -159,7 +159,8 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 | `GEMINI_API_KEY` | backend (Felix), scraper (`enrich:ai`) | required for Felix; without it `/felix/chat` answers 503 |
 | `TMDB_READ_ACCESS_TOKEN` | scraper | still needed there; **the backend never reads it** (can be removed from `cinema-backend`) |
 | `ASPNETCORE_ENVIRONMENT` | backend | leave unset (= Production: no developer pages) |
-| `LOG_FILE_PATH` | backend | **new**: set in the compose file (`/app/logs/felinoir-api-.json`): rolling ECS JSON files for Alloy, daily and at 100 MB, at most a month / 5 GB |
+| `LOG_FILE_PATH` | backend, frontend, scraper | **new**: set in the compose file (`/app/logs/felinoir-api-.json`, `/app/logs/felinoir-frontend-.json`, `/app/logs/scraper/felinoir-scraper-.json`): ECS JSON files for Alloy, daily, at most a month |
+| `TRACEPARENT` | scraper | **new**: set by the scraper's compose command, one W3C trace per pipeline run, so every step of a run shares a trace id |
 | `LOG_CONSOLE_FORMAT` | backend | **new, optional**: `ecs` prints ECS JSON on the console; by default it prints readable lines (`docker logs cinema-backend`) |
 | `GRAFANA_ADMIN_PASSWORD` | grafana | **new, required**: Grafana's admin password (only read on the first start); compose refuses to start without it |
 | `GRAFANA_ADMIN_USER` | grafana | **new, optional**: default `admin` |
@@ -186,7 +187,15 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 - [ ] Logs: `docker logs cinema-backend` prints readable lines; the same events, as ECS JSON, are in
       `logs/backend/felinoir-api-<date>.json` and in Grafana (Explore → Loki →
       `{service_name="felinoir-api"}`, or Drilldown → Logs). `| json` exposes every ECS field; a
-      line's `trace_id` links to the rest of its request. The report still attaches `scraper.log`.
+      line's `trace_id` links to every line of the same trace, across services (a page request
+      in the frontend and the API calls it made; every step of a scraper run). The report still
+      attaches `scraper.log`, which is no longer shipped (the JSON files carry the same lines).
+- [ ] The frontend runs as uid 1001: before its first start with the new compose file, run
+      `mkdir -p logs/frontend && chown 1001:1001 logs/frontend`. Otherwise Docker creates the
+      folder as root, the frontend can't write it and logs to stdout only (one error line at
+      start), and its lines never reach Grafana.
+- [ ] After copying the new `logging/grafana/datasources.yaml`, run `docker compose restart
+      grafana` (provisioning is read at start).
 - [ ] RAM: the logging services take about 400 MB of the server's 4 GB; their `mem_limit`s cap them.
 - [ ] Reverse proxy (`VIRTUAL_HOST`, nginx) unchanged; the backend is still only reached through the
       frontend on `cinema_internal`.
