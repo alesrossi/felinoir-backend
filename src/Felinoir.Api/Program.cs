@@ -84,7 +84,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 var app = builder.Build();
 
 app.UseTraceIdHeader();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options => options.GetLevel = RequestLogLevel.For);
 app.UseProblemResponses();
 app.UseCors();
 
