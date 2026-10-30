@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-29, after rework step 7 (the rework is complete).
+**Last updated:** 2026-10-30, after adding the server's log stack (Loki, Alloy, Grafana).
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -37,7 +37,7 @@ Legend: **Required** = the release breaks without it · **Check** = verify while
 | 6 | `/felix/chat?city=` (optional, id or name; Rome by default; unknown city → 400) | frontend |
 | 6 | Felix rebuilds its corpus on the first question after 05:00 Italian time (`Felix__DailyRebuildAt`), so answers follow the night's scrape | server |
 | 6 | Gemini calls retry transient failures: a Felix answer can now take up to ~75 s in the worst case (30 s per attempt) | frontend, server |
-| 3 | Logs: Elastic Common Schema JSON on stdout (Production), configurable through `Serilog__…` variables; tracing exported over OTLP when configured | server |
+| 3 | Logs: readable lines on stdout and, with `LOG_FILE_PATH`, Elastic Common Schema JSON files (shipped to Loki/Grafana on the server); levels configurable through `Serilog__…` variables; tracing exported over OTLP when configured | server |
 
 ---
 
@@ -135,7 +135,17 @@ works with problem responses.
 | `cinema-migrator` | `alesrossi/cinema-backend-migrator:latest` | **new**: one-shot, `restart: "no"`, after `db` is healthy |
 | `cinema-backend` | `alesrossi/cinema-backend:latest` | now `depends_on: cinema-migrator: service_completed_successfully` (was `db`) |
 | `cinema-scraper` | `alesrossi/cinema-scrapers:latest` | same `depends_on` change; `flaresolverr` unchanged |
+| `cinema-backend` (logs) | — | **new**: `LOG_FILE_PATH` and the `./logs/backend:/app/logs` bind mount (ECS JSON files) |
+| `loki` | `grafana/loki:3.7.9` | **new**: stores the logs (`loki_data` volume); 31-day retention; 512 MB limit |
+| `alloy` | `grafana/alloy:v1.21.3` | **new**: ships `logs/backend/*.json` and `logs/scraper.log` to Loki; 256 MB limit |
+| `grafana` | `grafana/grafana:13.2.5` | **new**: the log UI at `https://logs.felinoir.it` (nginx-proxy + Let's Encrypt), login required; 384 MB limit |
+| `log-retention` | `curlimages/curl:8.17.0` | **new**: keeps Loki under `LOG_RETENTION_MAX_MB` (5 GB) by deleting the oldest day; 32 MB limit |
 | others | — | unchanged |
+
+The logging services share a new `felinoir_logging` network; only Grafana is also on `proxy`. Their
+configuration is in `server/logging/` (`loki.yaml`, `config.alloy`, `grafana/datasources.yaml`,
+`retention.sh`), which must sit next to the compose file on the server. Together they use about
+400 MB of RAM.
 
 `docker compose run --rm cinema-scraper` (the daily cron) starts its dependencies, so the migrator
 runs before every scrape; with nothing pending it exits 0 in about a second.
@@ -148,7 +158,12 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 | `PORT` | backend | optional, default 3001 |
 | `GEMINI_API_KEY` | backend (Felix), scraper (`enrich:ai`) | required for Felix; without it `/felix/chat` answers 503 |
 | `TMDB_READ_ACCESS_TOKEN` | scraper | still needed there; **the backend never reads it** (can be removed from `cinema-backend`) |
-| `ASPNETCORE_ENVIRONMENT` | backend | leave unset (= Production: ECS JSON logs, no developer pages) |
+| `ASPNETCORE_ENVIRONMENT` | backend | leave unset (= Production: no developer pages) |
+| `LOG_FILE_PATH` | backend | **new**: set in the compose file (`/app/logs/felinoir-api-.json`): rolling ECS JSON files for Alloy, daily and at 100 MB, at most a month / 5 GB |
+| `LOG_CONSOLE_FORMAT` | backend | **new, optional**: `ecs` prints ECS JSON on the console; by default it prints readable lines (`docker logs cinema-backend`) |
+| `GRAFANA_ADMIN_PASSWORD` | grafana | **new, required**: Grafana's admin password (only read on the first start); compose refuses to start without it |
+| `GRAFANA_ADMIN_USER` | grafana | **new, optional**: default `admin` |
+| `LOG_RETENTION_MAX_MB` | log-retention | **new, optional**: most disk Loki may use, default `5120` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | backend | **new, optional**: e.g. Elastic APM's OTLP endpoint; traces and metrics are exported only when set (`OTEL_EXPORTER_OTLP_HEADERS` for auth) |
 | `Serilog__MinimumLevel__Default` and `Serilog__MinimumLevel__Override__<Namespace>` | backend | **new, optional**: log levels, e.g. `Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=Information` |
 | `Felix__DailyRebuildAt` | backend | **new, optional**: Italian time (`HH:mm`, default `05:00`) after which Felix rebuilds its corpus; keep it after the nightly scrape's end |
@@ -162,8 +177,17 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
       `refactoring` branch isn't built by CI.
 - [ ] `daily-report.sh` reads `movies.has_matches` (still there) and no dropped column; re-check if
       the report's queries change.
-- [ ] Logs are JSON lines now: the report attaches `scraper.log` only (the scraper's, unchanged); any
-      grep on backend container logs needs to match JSON.
+- [ ] `server/.env`: add `GRAFANA_ADMIN_PASSWORD` (see `server/.env.example`); without it **every**
+      compose command fails, including the daily `docker compose run --rm cinema-scraper`.
+- [ ] DNS: an A record for `logs.felinoir.it` pointing at the server, before Grafana starts (Let's
+      Encrypt validates it).
+- [ ] Copy `server/logging/` to the server next to `docker-compose.yml`; `logs/backend/` is created
+      by Docker on the first start (the backend runs as root, so it can write there).
+- [ ] Logs: `docker logs cinema-backend` prints readable lines; the same events, as ECS JSON, are in
+      `logs/backend/felinoir-api-<date>.json` and in Grafana (Explore → Loki →
+      `{service_name="felinoir-api"}`, or Drilldown → Logs). `| json` exposes every ECS field; a
+      line's `trace_id` links to the rest of its request. The report still attaches `scraper.log`.
+- [ ] RAM: the logging services take about 400 MB of the server's 4 GB; their `mem_limit`s cap them.
 - [ ] Reverse proxy (`VIRTUAL_HOST`, nginx) unchanged; the backend is still only reached through the
       frontend on `cinema_internal`.
 
@@ -186,7 +210,7 @@ the server runbook and the rollback).
    no errors, cinemas keep `city_id = 'rome'` and gain coordinates.
 5. **API**: `/health`, `/movies`, `/movies/slug/…`, `/cinemas` (every `city` is `"Roma"`),
    `/screenings?city=rome&withRelations=true`, a Felix chat (`GEMINI_API_KEY` set), create, join,
-   claim and poll a lobby; check `X-Trace-Id` and the JSON log lines.
+   claim and poll a lobby; check `X-Trace-Id` and that the log lines carry the same trace id.
 6. **Frontend**: home, a movie page, a cinema page (map, open-air badge), Felix, a lobby (`/e/<id>`),
    error paths.
 7. **Rollback rehearsal**: restore the dump again and start the old images.

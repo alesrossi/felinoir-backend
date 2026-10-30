@@ -127,6 +127,9 @@ everything the backend's `Baseline` migration creates (the drift test proves thi
    `alesrossi/cinema-backend` and `alesrossi/cinema-backend-migrator` with the same tags (the Docker
    Hub repository for the migrator must exist or be creatable by the CI token).
 3. **Rehearsed locally** on a restored copy of production (`alignment.md`, section 5), clean.
+4. **Logs ready**: a DNS A record for `logs.felinoir.it` pointing at the server, and
+   `GRAFANA_ADMIN_PASSWORD` added to the server's `.env` (`server/.env.example`). Without it every
+   compose command fails, the migrator's included.
 
 ### On the server (`cd` to the directory with `server/docker-compose.yml`)
 
@@ -135,19 +138,24 @@ everything the backend's `Baseline` migration creates (the drift test proves thi
    `docker image inspect --format '{{index .RepoDigests 0}}' alesrossi/cinema-backend:latest alesrossi/cinema-scrapers:latest`
 3. **Back up**, and copy the file off the server:
    `docker compose exec -T db pg_dump -U cinema -d cinema -Fc > felinoir-$(date +%F).dump`
-4. **Update** `docker-compose.yml` from the repo (it adds `cinema-migrator` and the `depends_on`
-   changes), then `docker compose pull cinema-migrator cinema-backend cinema-scraper`.
+4. **Update** `docker-compose.yml` and the `logging/` folder from the repo (they add
+   `cinema-migrator`, the `depends_on` changes and the log services), then
+   `docker compose pull cinema-migrator cinema-backend cinema-scraper loki alloy grafana log-retention`.
 5. **Migrate**, watching the output: `docker compose run --rm cinema-migrator`. Expect
    *"Adopting a database built by the scrapers: recording 20261029083355_Baseline as applied"*,
    then *"Applying 3 migration(s): ["20261029083600_NormaliseKeys","20261029090606_Cities","20261029110416_LobbyVersionInDomain"]"*, then
    *"Database schema is up to date"* and exit code 0. A second run only prints *"up to date"*.
-6. **Start the API**: `docker compose up -d cinema-backend` (the frontends follow its health check).
+6. **Start the logs, then the API**: `docker compose up -d loki alloy grafana log-retention`, then
+   `docker compose up -d cinema-backend` (the frontends follow its health check).
 7. **Verify**:
    - `/health`; `/cinemas` (every `city` is `"Roma"`); `/screenings?city=rome&withRelations=true`;
      `/movies/slug/<a real slug>`; every response has `X-Trace-Id`.
    - On felinoir.it: the home page, a movie page, a cinema page, a Felix question, and a lobby
      (create, join from a second browser, claim, poll).
-   - `docker compose logs cinema-backend` shows one JSON line per request.
+   - `docker compose logs cinema-backend` shows one readable line per request, and
+     `logs/backend/felinoir-api-<date>.json` the same events as ECS JSON.
+   - `https://logs.felinoir.it` asks for the Grafana login; Explore → Loki →
+     `{service_name="felinoir-api"}` shows the requests just made.
 8. **Scrape once by hand**: `docker compose run --rm cinema-scraper`. It must start (the version
    guard passes), issue no DDL, and leave cinemas with `city_id = 'rome'` and coordinates:
    `docker compose exec db psql -U cinema -d cinema -c "select city_id, count(*), count(latitude), sum(open_air::int) from cinemas group by 1"`
@@ -157,7 +165,8 @@ everything the backend's `Baseline` migration creates (the drift test proves thi
 
 Stop `cinema-backend`, restore the backup (`pg_restore --clean --if-exists -U cinema -d cinema`
 from the dump), pin the image digests noted in step 2 in `docker-compose.yml`, remove the
-`cinema-migrator` service and its `depends_on`, and start again. Rolling back means restoring the
+`cinema-migrator` service and its `depends_on`, and start again. The log services can stay: the
+old backend ignores `LOG_FILE_PATH`, so they simply receive only the scraper's log. Rolling back means restoring the
 database, not running `Down()` migrations: the cutover is all at once.
 
 ## Afterwards: changing the schema

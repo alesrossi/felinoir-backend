@@ -1,0 +1,56 @@
+# Loki (the loki service): one process, logs on the local disk (the loki_data volume).
+# Retention: 31 days by age (the compactor deletes older chunks), and at most
+# LOG_RETENTION_MAX_MB on disk, which retention.sh enforces through the delete API.
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: warn
+
+common:
+  path_prefix: /loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 744h            # 31 days
+  max_query_lookback: 744h
+  max_query_length: 745h            # retention.sh looks for the oldest line across all of it
+  allow_structured_metadata: true   # trace_id travels as structured metadata, not a label
+  deletion_mode: filter-and-delete  # lets retention.sh delete the oldest day
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_store: filesystem
+  delete_request_cancel_period: 10m
+
+# Small caches: a few MB of logs a day, one person querying.
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 32
+
+analytics:
+  reporting_enabled: false

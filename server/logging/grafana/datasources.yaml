@@ -1,0 +1,21 @@
+# Grafana provisioning: Loki as the only data source. A trace id in a log line links to every
+# other line of the same request (the API's X-Trace-Id header carries the same id).
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: ${LOKI_URL}
+    isDefault: true
+    editable: false
+    jsonData:
+      maxLines: 5000
+      derivedFields:
+        - name: Request
+          matcherType: label
+          matcherRegex: trace_id
+          url: '{service_name="felinoir-api"} | trace_id="$${__value.raw}"'
+          datasourceUid: loki
+          urlDisplayLabel: All lines of this request

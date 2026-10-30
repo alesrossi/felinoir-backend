@@ -1,0 +1,55 @@
+// Alloy (the alloy service): ships the server's log files to Loki.
+//   logs/backend/*.json  the API's Elastic Common Schema JSON lines  -> service_name="felinoir-api"
+//   logs/scraper.log     the scraper pipeline's plain text           -> service_name="felinoir-scraper"
+// Labels stay few (service_name, level); the trace id is structured metadata, so it is searchable
+// without creating a stream per request.
+
+local.file_match "api" {
+  path_targets = [{ "__path__" = "/logs/backend/*.json", "service_name" = "felinoir-api" }]
+}
+
+loki.source.file "api" {
+  targets    = local.file_match.api.targets
+  forward_to = [loki.process.api.receiver]
+}
+
+loki.process "api" {
+  // ECS keys contain dots, so they are quoted JMESPath identifiers.
+  stage.json {
+    expressions = {
+      timestamp = "\"@timestamp\"",
+      level     = "\"log.level\"",
+      trace_id  = "\"trace.id\"",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
+
+  stage.structured_metadata {
+    values = { trace_id = "" }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+local.file_match "scraper" {
+  path_targets = [{ "__path__" = "/logs/scraper.log", "service_name" = "felinoir-scraper" }]
+}
+
+loki.source.file "scraper" {
+  targets    = local.file_match.scraper.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("LOKI_PUSH_URL")
+  }
+}

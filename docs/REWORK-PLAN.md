@@ -351,6 +351,12 @@ work.
 
 ## Step 8 — After the cutover
 
+- **Done ahead of the cutover:** the server's log stack. The API writes rolling ECS JSON files
+  (`LOG_FILE_PATH`) next to readable console lines; Alloy ships them and the scraper's log to Loki;
+  Grafana shows them at `logs.felinoir.it`. Retention is 31 days and at most 5 GB
+  (`server/logging/`). Chosen over Elasticsearch and Kibana for memory: about 400 MB against
+  about 2 GB, on a 4 GB server.
+
 - **Extra targeted logging** where the default pipeline logging turns out to be thin, for
   example Felix rebuild reasons, Gemini fallbacks and lobby conflicts.
 - **Frontend observability:** the Next.js server propagates `traceparent` (`instrumentation.ts`

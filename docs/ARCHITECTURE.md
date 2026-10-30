@@ -183,8 +183,9 @@ Model, URL and generation settings are constants in `GeminiClient`; the system p
 - **Errors**: RFC 7807 problem details with `error` (the code clients read) and `traceId`; empty
   framework errors get a body; unhandled exceptions are logged and answered with a 500.
 - **Observability**: the W3C trace id is the correlation id (incoming `traceparent` continued,
-  `X-Trace-Id` on every response). Serilog from configuration: Elastic Common Schema JSON in
-  production, readable lines in Development. OpenTelemetry traces ASP.NET Core, HttpClient, Npgsql
+  `X-Trace-Id` on every response). Serilog from configuration (`LogOutputs`): readable console
+  lines, or ECS JSON with `LOG_CONSOLE_FORMAT=ecs`; with `LOG_FILE_PATH`, also rolling Elastic
+  Common Schema JSON files (daily and at 100 MB, at most a month / 5 GB). OpenTelemetry traces ASP.NET Core, HttpClient, Npgsql
   and the `Felinoir` source; exported over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 - **DI**: scopes validated at startup; singletons hold no scoped services (the Felix registry, the
   `TimeProvider`); typed clients are transient.
@@ -199,8 +200,12 @@ Model, URL and generation settings are constants in `GeminiClient`; the system p
     -> cinema-migrator   alesrossi/cinema-backend-migrator   (one-shot; exits 0)
          -> cinema-backend   alesrossi/cinema-backend         (API)
          -> cinema-scraper   alesrossi/cinema-scrapers        (cron: docker compose run --rm)
+
+  logs/backend/*.json (API, ECS JSON) + logs/scraper.log
+    -> alloy -> loki (31 days, <= 5 GB via log-retention) -> grafana   https://logs.felinoir.it
 ```
 
 One Dockerfile builds both backend images (`docker build .` for the API, `--target migrator` for the
 migrator); CI publishes them with the same tags from `main`. What the scrapers, the frontend and the
-server need for the cutover is in `alignment.md` and `docs/SCRAPERS-SCHEMA-MIGRATION.md`.
+server need for the cutover is in `alignment.md` and `docs/SCRAPERS-SCHEMA-MIGRATION.md`; the log
+services' configuration is in `server/logging/`.
