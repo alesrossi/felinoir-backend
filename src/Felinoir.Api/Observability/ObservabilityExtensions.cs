@@ -47,7 +47,9 @@ public static class ObservabilityExtensions
             .ConfigureResource(resource => resource.AddService(ServiceName))
             .WithTracing(tracing => tracing
                 .AddSource(FelinoirTelemetry.SourceName)
-                .AddAspNetCoreInstrumentation()
+                // Docker probes /health every few seconds; those traces would drown the rest.
+                .AddAspNetCoreInstrumentation(options => options.Filter = context =>
+                    !context.Request.Path.Equals(RequestLogLevel.HealthPath, StringComparison.OrdinalIgnoreCase))
                 .AddHttpClientInstrumentation()
                 .AddNpgsql())
             .WithMetrics(metrics => metrics

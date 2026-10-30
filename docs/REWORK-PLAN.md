@@ -356,6 +356,9 @@ work.
   Grafana shows them at `logs.felinoir.it`. Retention is 31 days and at most 5 GB
   (`server/logging/`). Chosen over Elasticsearch and Kibana for memory: about 400 MB against
   about 2 GB, on a 4 GB server.
+  Then the frontend's and the scraper's logs (same ECS keys), Postgres's own JSON log, and traces:
+  the API and the frontend export OTLP to Alloy, which forwards them to Tempo (7 days), linked to
+  the logs by trace id in Grafana. About 600 MB in all.
 
 - **Extra targeted logging** where the default pipeline logging turns out to be thin, for
   example Felix rebuild reasons, Gemini fallbacks and lobby conflicts.

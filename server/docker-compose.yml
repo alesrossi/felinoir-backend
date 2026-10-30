@@ -18,6 +18,8 @@ services:
       # container runs as uid 1001: create the directory first with
       # `mkdir -p logs/frontend && sudo chown 1001:1001 logs/frontend`.
       LOG_FILE_PATH: /app/logs/felinoir-frontend-.json
+      # Traces (OTLP over HTTP) to Alloy -> Tempo; the API continues them.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
     volumes:
       - ./logs/frontend:/app/logs
     depends_on:
@@ -82,6 +84,9 @@ services:
       # Readable lines on the console (docker logs); ECS JSON files for Alloy -> Loki (logs/backend,
       # rolled daily and at 100 MB, at most a month / 5 GB kept).
       LOG_FILE_PATH: /app/logs/felinoir-api-.json
+      # Traces (OTLP over gRPC) to Alloy -> Tempo: a span per request, handler, SQL command and
+      # Gemini call; health checks aren't traced.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
     volumes:
       - ./logs/backend:/app/logs
     depends_on:
@@ -201,10 +206,30 @@ services:
       POSTGRES_DB: cinema
       POSTGRES_USER: cinema
       POSTGRES_PASSWORD: cinema
+    # Postgres's own log as JSON files in logs/postgres, which Alloy ships to Loki
+    # (felinoir-postgres): errors, warnings, checkpoints, lock waits and statements slower than
+    # 500 ms. One file per weekday, overwritten a week later. With the collector on, `docker logs`
+    # only shows the startup. The folder is handed to the postgres user before the server starts.
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /var/log/postgresql && chown postgres:postgres /var/log/postgresql
+        exec docker-entrypoint.sh postgres \
+          -c logging_collector=on \
+          -c log_destination=jsonlog \
+          -c log_directory=/var/log/postgresql \
+          -c log_filename=postgresql-%a.log \
+          -c log_rotation_age=1d \
+          -c log_rotation_size=0 \
+          -c log_truncate_on_rotation=on \
+          -c log_min_duration_statement=500 \
+          -c log_lock_waits=on
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cinema"]
       interval: 5s
@@ -239,11 +264,12 @@ services:
       - proxy
       - cinema_internal
 
-  # ── Logs: Loki + Alloy + Grafana ──────────────────────────────────────────────
-  # Alloy ships logs/backend/*.json (the API), logs/scraper/*.json (the scraper) and logs/frontend/*.json
-  # (the Next.js server) to Loki; Grafana shows them at
+  # ── Logs and traces: Loki + Tempo + Alloy + Grafana ───────────────────────────
+  # Alloy ships logs/backend/*.json (the API), logs/scraper/*.json (the scraper), logs/frontend/*.json
+  # (the Next.js server) and logs/postgres/*.json (Postgres) to Loki, and the API's and the
+  # frontend's traces to Tempo (7 days); Grafana shows both at
   # https://logs.felinoir.it (requires a DNS A record for logs.felinoir.it). Loki keeps 31 days,
-  # and log-retention keeps it under LOG_RETENTION_MAX_MB. About 400 MB of RAM in all.
+  # and log-retention keeps it under LOG_RETENTION_MAX_MB. About 600 MB of RAM in all.
   # The config files are mounted with create_host_path: false, so a missing file stops the service
   # with an error instead of Docker silently creating an empty directory in its place.
   loki:
@@ -263,6 +289,23 @@ services:
     networks:
       - logging
 
+  tempo:
+    image: grafana/tempo:2.10.10
+    container_name: tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - type: bind
+        source: ./logging/tempo.yaml
+        target: /etc/tempo/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - tempo_data:/var/tempo
+    mem_limit: 384m
+    networks:
+      - logging
+
   alloy:
     image: grafana/alloy:v1.21.3
     container_name: alloy
@@ -270,6 +313,7 @@ services:
     command: ["run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data"]
     environment:
       LOKI_PUSH_URL: http://loki:3100/loki/api/v1/push
+      TEMPO_OTLP_ENDPOINT: tempo:4317
     volumes:
       - type: bind
         source: ./logging/config.alloy
@@ -282,8 +326,10 @@ services:
     mem_limit: 256m
     depends_on:
       - loki
+      - tempo
     networks:
       - logging
+      - cinema_internal   # receives the API's and the frontend's traces
 
   grafana:
     image: grafana/grafana:13.2.5
@@ -304,6 +350,7 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
     volumes:
       - type: bind
         source: ./logging/grafana/datasources.yaml
@@ -357,3 +404,4 @@ volumes:
   loki_data:
   alloy_data:
   grafana_data:
+  tempo_data:

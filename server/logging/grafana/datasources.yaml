@@ -1,6 +1,8 @@
-# Grafana provisioning: Loki as the only data source. A trace id in a log line links to every
-# line of the same trace, across services: a page request in the frontend and the API calls it
-# made, or every step of one scraper run (the API's X-Trace-Id header carries the same id).
+# Grafana provisioning: Loki (logs) and Tempo (traces), linked by trace id both ways.
+# A log line's trace_id links to every line of the same trace, across services (a page request
+# in the frontend and the API calls it made, or every step of one scraper run), and to the trace
+# itself; a trace's spans link back to their log lines. The API's X-Trace-Id header carries the
+# same id.
 apiVersion: 1
 
 datasources:
@@ -20,3 +22,27 @@ datasources:
           url: '{service_name=~"felinoir-.+"} | trace_id="$${__value.raw}"'
           datasourceUid: loki
           urlDisplayLabel: All lines of this trace
+        - name: Trace
+          matcherType: label
+          matcherRegex: trace_id
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+          urlDisplayLabel: View trace
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: ${TEMPO_URL}
+    editable: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        customQuery: true
+        query: '{service_name=~"felinoir-.+"} | trace_id="$${__trace.traceId}"'
+      lokiSearch:
+        datasourceUid: loki
+      nodeGraph:
+        enabled: true

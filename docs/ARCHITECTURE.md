@@ -186,7 +186,8 @@ Model, URL and generation settings are constants in `GeminiClient`; the system p
   `X-Trace-Id` on every response). Serilog from configuration (`LogOutputs`): readable console
   lines, or ECS JSON with `LOG_CONSOLE_FORMAT=ecs`; with `LOG_FILE_PATH`, also rolling Elastic
   Common Schema JSON files (daily and at 100 MB, at most a month / 5 GB). OpenTelemetry traces ASP.NET Core, HttpClient, Npgsql
-  and the `Felinoir` source; exported over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
+  and the `Felinoir` source (health checks excluded); exported over OTLP when
+  `OTEL_EXPORTER_OTLP_ENDPOINT` is set (on the server: Alloy, then Tempo).
 - **DI**: scopes validated at startup; singletons hold no scoped services (the Felix registry, the
   `TimeProvider`); typed clients are transient.
 - **Build**: warnings as errors, .NET analysers, central package versions.
@@ -201,8 +202,10 @@ Model, URL and generation settings are constants in `GeminiClient`; the system p
          -> cinema-backend   alesrossi/cinema-backend         (API)
          -> cinema-scraper   alesrossi/cinema-scrapers        (cron: docker compose run --rm)
 
-  logs/backend/*.json (API, ECS JSON) + logs/scraper.log
-    -> alloy -> loki (31 days, <= 5 GB via log-retention) -> grafana   https://logs.felinoir.it
+  logs/{backend,frontend,scraper,postgres}/*.json
+    -> alloy -> loki   (logs, 31 days, <= 5 GB via log-retention) -+
+  API + frontend traces (OTLP)                                      +-> grafana  https://logs.felinoir.it
+    -> alloy -> tempo  (traces, 7 days) ---------------------------+
 ```
 
 One Dockerfile builds both backend images (`docker build .` for the API, `--target migrator` for the

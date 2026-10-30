@@ -139,13 +139,16 @@ everything the backend's `Baseline` migration creates (the drift test proves thi
 3. **Back up**, and copy the file off the server:
    `docker compose exec -T db pg_dump -U cinema -d cinema -Fc > felinoir-$(date +%F).dump`
 4. **Update** `docker-compose.yml` and the `logging/` folder from the repo (they add
-   `cinema-migrator`, the `depends_on` changes and the log services), then
-   `docker compose pull cinema-migrator cinema-backend cinema-scraper loki alloy grafana log-retention`.
+   `cinema-migrator`, the `depends_on` changes, the log and trace services, and the `db` service's
+   logging flags), then
+   `docker compose pull cinema-migrator cinema-backend cinema-scraper loki tempo alloy grafana log-retention`.
+   Apply the `db` change now, while the site is stopped anyway: `docker compose up -d db` recreates
+   it (a few seconds) and it then writes `logs/postgres/`.
 5. **Migrate**, watching the output: `docker compose run --rm cinema-migrator`. Expect
    *"Adopting a database built by the scrapers: recording 20261029083355_Baseline as applied"*,
    then *"Applying 3 migration(s): ["20261029083600_NormaliseKeys","20261029090606_Cities","20261029110416_LobbyVersionInDomain"]"*, then
    *"Database schema is up to date"* and exit code 0. A second run only prints *"up to date"*.
-6. **Start the logs, then the API**: `docker compose up -d loki alloy grafana log-retention`, then
+6. **Start the logs, then the API**: `docker compose up -d loki tempo alloy grafana log-retention`, then
    `docker compose up -d cinema-backend` (the frontends follow its health check).
 7. **Verify**:
    - `/health`; `/cinemas` (every `city` is `"Roma"`); `/screenings?city=rome&withRelations=true`;

@@ -1,7 +1,9 @@
-// Alloy (the alloy service): ships the server's log files to Loki.
-//   logs/backend/*.json  the API's Elastic Common Schema JSON lines      -> service_name="felinoir-api"
-//   logs/scraper/*.json  the scraper pipeline's ECS JSON lines (same keys) -> service_name="felinoir-scraper"
-//   logs/frontend/*.json the Next.js server's ECS JSON lines (same keys)   -> service_name="felinoir-frontend"
+// Alloy (the alloy service): ships the server's log files to Loki, and traces to Tempo.
+//   logs/backend/*.json   the API's Elastic Common Schema JSON lines      -> service_name="felinoir-api"
+//   logs/scraper/*.json   the scraper pipeline's ECS JSON lines (same keys) -> service_name="felinoir-scraper"
+//   logs/frontend/*.json  the Next.js server's ECS JSON lines (same keys)   -> service_name="felinoir-frontend"
+//   logs/postgres/*.json  Postgres's own JSON log (its keys, mapped below)  -> service_name="felinoir-postgres"
+//   OTLP on :4317 (gRPC) and :4318 (HTTP)  the API's and the frontend's traces -> Tempo
 // Labels stay few (service_name, level); the trace id is structured metadata, so it is searchable
 // without creating a stream per request. Every step of one scraper run shares a trace id.
 // logs/scraper.log (the scraper's readable console output, read by daily-report.sh) is not shipped:
@@ -60,8 +62,77 @@ loki.process "ecs" {
   forward_to = [loki.write.default.receiver]
 }
 
+// Postgres's jsonlog: errors, warnings, checkpoints, statements slower than log_min_duration_statement.
+// Its severities become the level names the other services use, so `level` filters them all alike.
+local.file_match "postgres" {
+  path_targets = [{ "__path__" = "/logs/postgres/*.json", "service_name" = "felinoir-postgres" }]
+}
+
+loki.source.file "postgres" {
+  targets    = local.file_match.postgres.targets
+  forward_to = [loki.process.postgres.receiver]
+}
+
+loki.process "postgres" {
+  stage.json {
+    expressions = {
+      timestamp = "timestamp",
+      level     = "error_severity",
+    }
+  }
+
+  // "2026-10-30 09:41:23.746 UTC"
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02 15:04:05.000 MST"
+  }
+
+  stage.template {
+    source   = "level"
+    template = `{{ if or (eq .Value "ERROR") (eq .Value "FATAL") (eq .Value "PANIC") }}Error{{ else if eq .Value "WARNING" }}Warning{{ else if hasPrefix "DEBUG" .Value }}Debug{{ else }}Information{{ end }}`
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
 loki.write "default" {
   endpoint {
     url = sys.env("LOKI_PUSH_URL")
+  }
+}
+
+// Traces: the API (gRPC) and the frontend (HTTP) export OTLP here; batched, then sent to Tempo.
+// Only traces have a destination: the metrics the .NET exporter also sends are dropped.
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = sys.env("TEMPO_OTLP_ENDPOINT")
+
+    tls {
+      insecure = true
+    }
   }
 }

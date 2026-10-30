@@ -4,7 +4,7 @@ What the other projects and the server need to change or check before the rework
 (`refactoring` branch) goes live. Kept up to date at every rework step; the detailed scraper
 strategy is in `docs/SCRAPERS-SCHEMA-MIGRATION.md`, the plan in `docs/REWORK-PLAN.md`.
 
-**Last updated:** 2026-10-30, after the scrapers and the frontend joined the server's log stack.
+**Last updated:** 2026-10-30, after adding traces (Tempo) and Postgres's own logs to the server's log stack.
 
 Legend: **Required** = the release breaks without it · **Check** = verify while testing locally ·
 **Optional** = an improvement, nothing breaks without it.
@@ -140,12 +140,15 @@ works with problem responses.
 | `alloy` | `grafana/alloy:v1.21.3` | **new**: ships `logs/backend/*.json` (API), `logs/scraper/*.json` (scraper) and `logs/frontend/*.json` (Next.js server) to Loki, all ECS JSON with the same keys; 256 MB limit |
 | `grafana` | `grafana/grafana:13.2.5` | **new**: the log UI at `https://logs.felinoir.it` (nginx-proxy + Let's Encrypt), login required; 384 MB limit |
 | `log-retention` | `curlimages/curl:8.17.0` | **new**: keeps Loki under `LOG_RETENTION_MAX_MB` (5 GB) by deleting the oldest day; 32 MB limit |
+| `tempo` | `grafana/tempo:2.10.10` | **new**: stores traces (`tempo_data` volume) for 7 days; Alloy forwards the API's and the frontend's OTLP traces to it; 384 MB limit |
+| `alloy` (traces) | — | **new**: also receives OTLP on 4317 (gRPC) and 4318 (HTTP), so it joins `cinema_internal` |
+| `db` | `postgres:16-alpine` | **changed**: writes its own JSON log to `logs/postgres/` (errors, warnings, checkpoints, lock waits, statements over 500 ms; one file per weekday); `docker logs db` now only shows the startup. Changing its command **recreates the container: a few seconds of downtime** |
 | others | — | unchanged |
 
 The logging services share a new `felinoir_logging` network; only Grafana is also on `proxy`. Their
-configuration is in `server/logging/` (`loki.yaml`, `config.alloy`, `grafana/datasources.yaml`,
-`retention.sh`), which must sit next to the compose file on the server. Together they use about
-400 MB of RAM.
+configuration is in `server/logging/` (`loki.yaml`, `tempo.yaml`, `config.alloy`,
+`grafana/datasources.yaml`, `retention.sh`), which must sit next to the compose file on the server.
+Together they use about 600 MB of RAM.
 
 `docker compose run --rm cinema-scraper` (the daily cron) starts its dependencies, so the migrator
 runs before every scrape; with nothing pending it exits 0 in about a second.
@@ -165,7 +168,7 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
 | `GRAFANA_ADMIN_PASSWORD` | grafana | **new, required**: Grafana's admin password (only read on the first start); compose refuses to start without it |
 | `GRAFANA_ADMIN_USER` | grafana | **new, optional**: default `admin` |
 | `LOG_RETENTION_MAX_MB` | log-retention | **new, optional**: most disk Loki may use, default `5120` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | backend | **new, optional**: e.g. Elastic APM's OTLP endpoint; traces and metrics are exported only when set (`OTEL_EXPORTER_OTLP_HEADERS` for auth) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | backend, frontend | **new**: set in the compose file to Alloy (`http://alloy:4317` for the API over gRPC, `http://alloy:4318` for the frontend over HTTP); without it nothing is exported |
 | `Serilog__MinimumLevel__Default` and `Serilog__MinimumLevel__Override__<Namespace>` | backend | **new, optional**: log levels, e.g. `Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore=Information` |
 | `Felix__DailyRebuildAt` | backend | **new, optional**: Italian time (`HH:mm`, default `05:00`) after which Felix rebuilds its corpus; keep it after the nightly scrape's end |
 | `CINEMAS_CONFIG_PATH` | backend | **removed**: the backend no longer reads `cinemas.yml` |
@@ -196,7 +199,11 @@ runs before every scrape; with nothing pending it exits 0 in about a second.
       start), and its lines never reach Grafana.
 - [ ] After copying the new `logging/grafana/datasources.yaml`, run `docker compose restart
       grafana` (provisioning is read at start).
-- [ ] RAM: the logging services take about 400 MB of the server's 4 GB; their `mem_limit`s cap them.
+- [ ] RAM: the logging services take about 600 MB of the server's 4 GB; their `mem_limit`s cap them.
+- [ ] Traces: Grafana → Explore → Tempo (Search, or paste a trace id), or from any log line with a
+      `trace_id` → *View trace*. A frontend page request, the API calls it made, their handlers
+      and every SQL command are one trace. The scraper's runs share a trace id in the logs but
+      aren't exported to Tempo.
 - [ ] Reverse proxy (`VIRTUAL_HOST`, nginx) unchanged; the backend is still only reached through the
       frontend on `cinema_internal`.
 
