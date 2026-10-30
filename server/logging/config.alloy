@@ -1,8 +1,11 @@
 // Alloy (the alloy service): ships the server's log files to Loki.
-//   logs/backend/*.json  the API's Elastic Common Schema JSON lines  -> service_name="felinoir-api"
-//   logs/scraper.log     the scraper pipeline's plain text           -> service_name="felinoir-scraper"
+//   logs/backend/*.json  the API's Elastic Common Schema JSON lines      -> service_name="felinoir-api"
+//   logs/scraper/*.json  the scraper pipeline's ECS JSON lines (same keys) -> service_name="felinoir-scraper"
+//   logs/frontend/*.json the Next.js server's ECS JSON lines (same keys)   -> service_name="felinoir-frontend"
 // Labels stay few (service_name, level); the trace id is structured metadata, so it is searchable
-// without creating a stream per request.
+// without creating a stream per request. Every step of one scraper run shares a trace id.
+// logs/scraper.log (the scraper's readable console output, read by daily-report.sh) is not shipped:
+// the JSON files carry the same lines.
 
 local.file_match "api" {
   path_targets = [{ "__path__" = "/logs/backend/*.json", "service_name" = "felinoir-api" }]
@@ -10,10 +13,28 @@ local.file_match "api" {
 
 loki.source.file "api" {
   targets    = local.file_match.api.targets
-  forward_to = [loki.process.api.receiver]
+  forward_to = [loki.process.ecs.receiver]
 }
 
-loki.process "api" {
+local.file_match "scraper" {
+  path_targets = [{ "__path__" = "/logs/scraper/*.json", "service_name" = "felinoir-scraper" }]
+}
+
+loki.source.file "scraper" {
+  targets    = local.file_match.scraper.targets
+  forward_to = [loki.process.ecs.receiver]
+}
+
+local.file_match "frontend" {
+  path_targets = [{ "__path__" = "/logs/frontend/*.json", "service_name" = "felinoir-frontend" }]
+}
+
+loki.source.file "frontend" {
+  targets    = local.file_match.frontend.targets
+  forward_to = [loki.process.ecs.receiver]
+}
+
+loki.process "ecs" {
   // ECS keys contain dots, so they are quoted JMESPath identifiers.
   stage.json {
     expressions = {
@@ -36,15 +57,6 @@ loki.process "api" {
     values = { trace_id = "" }
   }
 
-  forward_to = [loki.write.default.receiver]
-}
-
-local.file_match "scraper" {
-  path_targets = [{ "__path__" = "/logs/scraper.log", "service_name" = "felinoir-scraper" }]
-}
-
-loki.source.file "scraper" {
-  targets    = local.file_match.scraper.targets
   forward_to = [loki.write.default.receiver]
 }
 

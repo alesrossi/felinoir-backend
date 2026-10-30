@@ -13,6 +13,13 @@ services:
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: felinoir.it,www.felinoir.it,cinema-roma.alessandrorossi.tech
       LETSENCRYPT_EMAIL: alessandro0024@gmail.com
+      # Readable lines on the console (docker logs); ECS JSON files for Alloy -> Loki (logs/frontend,
+      # rolled daily and at 100 MB, at most a month / 5 GB kept), same keys as the API's. The
+      # container runs as uid 1001: create the directory first with
+      # `mkdir -p logs/frontend && sudo chown 1001:1001 logs/frontend`.
+      LOG_FILE_PATH: /app/logs/felinoir-frontend-.json
+    volumes:
+      - ./logs/frontend:/app/logs
     depends_on:
       cinema-backend:
         condition: service_healthy
@@ -104,6 +111,9 @@ services:
       FLARESOLVERR_URL: http://flaresolverr:8191/v1
       USE_PROXY: ${USE_PROXY:-false}
       PROXY_URL: ${PROXY_URL:-}
+      # Readable lines on the console (docker logs, logs/scraper.log); ECS JSON files for
+      # Alloy -> Loki (logs/scraper, one per day, a month kept), same keys as the API's.
+      LOG_FILE_PATH: /app/logs/scraper/felinoir-scraper-.json
     depends_on:
       cinema-migrator:
         condition: service_completed_successfully
@@ -117,7 +127,13 @@ services:
       - |
         mkdir -p /app/logs
         log=/app/logs/scraper.log
-        echo "=== $$(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee -a $$log
+
+        # One W3C trace per pipeline run: every step logs this trace.id (each with its own
+        # span.id), so {service_name="felinoir-scraper"} | trace_id="…" shows the whole run.
+        hex() { od -An -N"$$1" -tx1 /dev/urandom | tr -d ' \n'; }
+        export TRACEPARENT="00-$$(hex 16)-$$(hex 8)-01"
+
+        echo "=== $$(date -u '+%Y-%m-%d %H:%M:%S UTC') · trace $$(echo $$TRACEPARENT | cut -d- -f2) ===" | tee -a $$log
 
         { npm run scrape 2>&1;      echo $$? > /tmp/s1_exit; } | tee /tmp/s1.txt | tee -a $$log
         { npm run enrich 2>&1;      echo $$? > /tmp/s2_exit; } | tee /tmp/s2.txt | tee -a $$log
@@ -224,7 +240,8 @@ services:
       - cinema_internal
 
   # ── Logs: Loki + Alloy + Grafana ──────────────────────────────────────────────
-  # Alloy ships logs/backend/*.json (the API) and logs/scraper.log to Loki; Grafana shows them at
+  # Alloy ships logs/backend/*.json (the API), logs/scraper/*.json (the scraper) and logs/frontend/*.json
+  # (the Next.js server) to Loki; Grafana shows them at
   # https://logs.felinoir.it (requires a DNS A record for logs.felinoir.it). Loki keeps 31 days,
   # and log-retention keeps it under LOG_RETENTION_MAX_MB. About 400 MB of RAM in all.
   # The config files are mounted with create_host_path: false, so a missing file stops the service
