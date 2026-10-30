@@ -227,13 +227,20 @@ services:
   # Alloy ships logs/backend/*.json (the API) and logs/scraper.log to Loki; Grafana shows them at
   # https://logs.felinoir.it (requires a DNS A record for logs.felinoir.it). Loki keeps 31 days,
   # and log-retention keeps it under LOG_RETENTION_MAX_MB. About 400 MB of RAM in all.
+  # The config files are mounted with create_host_path: false, so a missing file stops the service
+  # with an error instead of Docker silently creating an empty directory in its place.
   loki:
     image: grafana/loki:3.7.9
     container_name: loki
     restart: unless-stopped
     command: ["-config.file=/etc/loki/config.yaml"]
     volumes:
-      - ./logging/loki.yaml:/etc/loki/config.yaml:ro
+      - type: bind
+        source: ./logging/loki.yaml
+        target: /etc/loki/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
       - loki_data:/loki
     mem_limit: 512m
     networks:
@@ -247,7 +254,12 @@ services:
     environment:
       LOKI_PUSH_URL: http://loki:3100/loki/api/v1/push
     volumes:
-      - ./logging/config.alloy:/etc/alloy/config.alloy:ro
+      - type: bind
+        source: ./logging/config.alloy
+        target: /etc/alloy/config.alloy
+        read_only: true
+        bind:
+          create_host_path: false
       - ./logs:/logs:ro
       - alloy_data:/var/lib/alloy/data   # how far each file has been read
     mem_limit: 256m
@@ -276,7 +288,12 @@ services:
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       LOKI_URL: http://loki:3100
     volumes:
-      - ./logging/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - type: bind
+        source: ./logging/grafana/datasources.yaml
+        target: /etc/grafana/provisioning/datasources/datasources.yaml
+        read_only: true
+        bind:
+          create_host_path: false
       - grafana_data:/var/lib/grafana
     expose:
       - "3000"
@@ -296,7 +313,12 @@ services:
       LOKI_URL: http://loki:3100
       LOG_RETENTION_MAX_MB: ${LOG_RETENTION_MAX_MB:-5120}
     volumes:
-      - ./logging/retention.sh:/retention.sh:ro
+      - type: bind
+        source: ./logging/retention.sh
+        target: /retention.sh
+        read_only: true
+        bind:
+          create_host_path: false
       - loki_data:/loki:ro
     mem_limit: 32m
     depends_on:
